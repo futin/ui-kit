@@ -1,8 +1,9 @@
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // What a consumer installs is dist/ and nothing else (files: ["dist"]), so the entry points package.json names must be in it, and no built module may pull a
 // stylesheet in: guide-manager and backlog-manager run Jest over CommonJS, which cannot load a .css import. The host imports ui-kit/styles.css itself.
@@ -88,4 +89,47 @@ it('no path under dist/ contains playground', () => {
   const paths = readdirSync(dist, { recursive: true }) as string[];
   assert.ok(paths.length > 0, 'dist/ is empty — run npm run build');
   for (const p of paths) assert.doesNotMatch(p, /playground/i, `dist/${p} is playground output — the playground is never built into dist/`);
+});
+
+// Both module systems a consumer can use load the built entry points (spec D7): the dashboard bundles ESM, and the Jest suites in guide-manager and
+// backlog-manager require CommonJS. Each must expose the surface an app shell actually wires.
+const surface = ['ReleasesDrawer', 'useWhatsNew', 'renderNotesHtml'];
+
+it('require(dist/cjs/index.js) exposes ReleasesDrawer, useWhatsNew and renderNotesHtml', () => {
+  const cjs = createRequire(import.meta.url)(join(dist, 'cjs/index.js'));
+  for (const name of surface) assert.equal(typeof cjs[name], 'function', `the CommonJS build does not export ${name}`);
+  assert.equal(cjs.renderNotesHtml('**a**'), '<p><strong>a</strong></p>');
+});
+
+it('import(dist/esm/index.js) exposes ReleasesDrawer, useWhatsNew and renderNotesHtml', async () => {
+  const esm = await import(pathToFileURL(join(dist, 'esm/index.js')).href);
+  for (const name of surface) assert.equal(typeof esm[name], 'function', `the ESM build does not export ${name}`);
+  assert.equal(esm.renderNotesHtml('**a**'), '<p><strong>a</strong></p>');
+});
+
+// React is a peer: the consumer's copy must be the one that renders, or hooks break across two Reacts. So dist/ reaches React only through bare `react`
+// specifiers the consumer resolves, never through a bundled or vendored copy, and package.json lists it as a peer and nothing else.
+it('react resolves from the consumer: dist/ holds no react code and imports nothing else bare', () => {
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  assert.deepEqual(pkg.peerDependencies, { react: '^18.3 || ^19' });
+  assert.equal(pkg.dependencies, undefined, 'ui-kit has no runtime dependencies');
+  const specifier = /\bfrom\s*['"]([^'"]+)['"]|\bimport\s*\(?\s*['"]([^'"]+)['"]|\brequire\(\s*['"]([^'"]+)['"]\s*\)/g;
+  // React's own build carries these strings; a bundled or vendored copy of it would too.
+  const reactCode = /react\.(?:transitional\.)?element|__CLIENT_INTERNALS_DO_NOT_USE|__SECRET_INTERNALS_DO_NOT_USE|ReactSharedInternals/;
+  const files = (readdirSync(dist, { recursive: true, withFileTypes: true }) as { isFile(): boolean; parentPath: string; name: string }[]).filter((e) => e.isFile());
+  let bare = 0;
+  for (const e of files) {
+    const path = join(e.parentPath, e.name);
+    const text = readFileSync(path, 'utf8');
+    const rel = path.slice(root.length);
+    assert.doesNotMatch(text, reactCode, `${rel} contains react's own code — react is a peer, never bundled`);
+    assert.doesNotMatch(rel, /node_modules/, `${rel} vendors a dependency`);
+    for (const m of text.matchAll(specifier)) {
+      const spec = m[1] ?? m[2] ?? m[3];
+      if (spec.startsWith('.')) continue;
+      bare++;
+      assert.match(spec, /^react(?:\/jsx-runtime)?$/, `${rel} imports ${spec}; the only package dist/ may reach is the consumer's react`);
+    }
+  }
+  assert.ok(bare > 0, 'dist/ imports react nowhere — the pattern found no bare specifiers');
 });

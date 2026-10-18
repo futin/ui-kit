@@ -59,11 +59,28 @@ pnpm add github:futin/ui-kit#vX.Y.Z
 ```
 
 ```ts
-import 'ui-kit/styles.css'; // once, in the client entry
+import 'ui-kit/styles.css'; // once, in the client entry — never from a component, so a Jest suite over CommonJS never meets a .css import
 import { ReleasesDrawer, VersionChip, useWhatsNew } from 'ui-kit';
 ```
 
-The package resolves to ESM for bundlers and to CommonJS for `require`, with `.d.ts` types for both.
+The package resolves to ESM for bundlers and to CommonJS for `require`, with `.d.ts` types for both. React comes from the app: `react` is a peer, and
+nothing in `dist/` bundles a copy of it (`test/packaging.test.ts` checks both builds load and that the only package `dist/` reaches is `react`).
+
+Each app wraps `ReleasesDrawer` once in its shell, fed by `const w = useWhatsNew({ storageKey })`. The drawer accepts the host's dismiss and focus layer
+instead of owning one, so the wrapper is one of three shapes:
+
+```tsx
+// Default: the drawer closes itself on Escape and on a scrim click.
+{w.open && w.data && <ReleasesDrawer data={w.data} onClose={w.close} />}
+// Escape stack: the host already routes Escape to its topmost layer, so the drawer adds no key listener and the stack calls w.close.
+{w.open && w.data && <ReleasesDrawer data={w.data} onClose={w.close} closeOnEscape={false} />}
+// Back gesture: with narrow = useMediaQuery('(max-width: 640px)') the phone drawer is full screen, so the system back closes it — push a history
+// entry on open, call w.close on popstate, and close through history.back() so the entry is consumed.
+{w.open && w.data && <ReleasesDrawer data={w.data} onClose={() => history.back()} narrow={narrow} />}
+```
+
+The chip is `{w.chip && <VersionChip label={w.chip.label} dot={w.chip.dot} onClick={w.show} />}` in all three. Pass `restoreFocus` when the opener can
+disappear while the drawer is open.
 
 ## Developing
 
