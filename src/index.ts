@@ -12,3 +12,4 @@ export {
   TYPE_LABEL,
   writeLastSeen,
 } from './releases/logic.js';
+export { renderNotesHtml } from './releases/notes.js';
