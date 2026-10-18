@@ -1,2 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.writeLastSeen = exports.TYPE_LABEL = exports.readLastSeen = exports.isVersion = exports.isReleasesResponse = exports.formatReleaseDate = exports.dotState = exports.displayTitle = exports.compareVersions = exports.chipLabel = void 0;
+var logic_js_1 = require("./releases/logic.js");
+Object.defineProperty(exports, "chipLabel", { enumerable: true, get: function () { return logic_js_1.chipLabel; } });
+Object.defineProperty(exports, "compareVersions", { enumerable: true, get: function () { return logic_js_1.compareVersions; } });
+Object.defineProperty(exports, "displayTitle", { enumerable: true, get: function () { return logic_js_1.displayTitle; } });
+Object.defineProperty(exports, "dotState", { enumerable: true, get: function () { return logic_js_1.dotState; } });
+Object.defineProperty(exports, "formatReleaseDate", { enumerable: true, get: function () { return logic_js_1.formatReleaseDate; } });
+Object.defineProperty(exports, "isReleasesResponse", { enumerable: true, get: function () { return logic_js_1.isReleasesResponse; } });
+Object.defineProperty(exports, "isVersion", { enumerable: true, get: function () { return logic_js_1.isVersion; } });
+Object.defineProperty(exports, "readLastSeen", { enumerable: true, get: function () { return logic_js_1.readLastSeen; } });
+Object.defineProperty(exports, "TYPE_LABEL", { enumerable: true, get: function () { return logic_js_1.TYPE_LABEL; } });
+Object.defineProperty(exports, "writeLastSeen", { enumerable: true, get: function () { return logic_js_1.writeLastSeen; } });
