@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.renderNotesHtml = exports.writeLastSeen = exports.TYPE_LABEL = exports.readLastSeen = exports.isVersion = exports.isReleasesResponse = exports.formatReleaseDate = exports.dotState = exports.displayTitle = exports.compareVersions = exports.chipLabel = void 0;
+exports.useWhatsNew = exports.useReleases = exports.renderNotesHtml = exports.writeLastSeen = exports.TYPE_LABEL = exports.readLastSeen = exports.isVersion = exports.isReleasesResponse = exports.formatReleaseDate = exports.dotState = exports.displayTitle = exports.compareVersions = exports.chipLabel = void 0;
 var logic_js_1 = require("./releases/logic.js");
 Object.defineProperty(exports, "chipLabel", { enumerable: true, get: function () { return logic_js_1.chipLabel; } });
 Object.defineProperty(exports, "compareVersions", { enumerable: true, get: function () { return logic_js_1.compareVersions; } });
@@ -14,3 +14,7 @@ Object.defineProperty(exports, "TYPE_LABEL", { enumerable: true, get: function (
 Object.defineProperty(exports, "writeLastSeen", { enumerable: true, get: function () { return logic_js_1.writeLastSeen; } });
 var notes_js_1 = require("./releases/notes.js");
 Object.defineProperty(exports, "renderNotesHtml", { enumerable: true, get: function () { return notes_js_1.renderNotesHtml; } });
+var useReleases_js_1 = require("./releases/useReleases.js");
+Object.defineProperty(exports, "useReleases", { enumerable: true, get: function () { return useReleases_js_1.useReleases; } });
+var useWhatsNew_js_1 = require("./releases/useWhatsNew.js");
+Object.defineProperty(exports, "useWhatsNew", { enumerable: true, get: function () { return useWhatsNew_js_1.useWhatsNew; } });
