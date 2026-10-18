@@ -5,7 +5,7 @@ that each app themes through `--uk-*` custom properties, so one implementation r
 
 The first content is the releases UI (version chip and What's new drawer), designed in release-kit's
 `docs/superpowers/specs/2026-10-18-shared-releases-ui-design.md`. So far the package exports its wire types (`Release`, `ReleasesResponse`, `ReleaseType`) and the pure releases logic in `src/releases/logic.ts` (`isVersion`, `compareVersions`, `chipLabel`, `displayTitle`, `TYPE_LABEL`, `dotState`, `readLastSeen(key)`, `writeLastSeen(key, v)`, `formatReleaseDate`, `isReleasesResponse`) and the default notes renderer in `src/releases/notes.ts` (`renderNotesHtml(md)`, escape-first, safe to set
-with no app sanitiser behind it), the hooks `useReleases(url?)` and `useWhatsNew({ storageKey, url? })` in `src/releases/`, the components `VersionChip`, `ReleasesPanel` and `ReleasesDrawer` in `src/releases/`, and `Drawer` and `useMediaQuery(query)` (so a host derives the drawer's `narrow` from its own breakpoint) in `src/ui/`, styled by `ui-kit/styles.css` (see §Tokens); shared test data lives in `fixtures/releases.ts`, which is never shipped.
+with no app sanitiser behind it), the hooks `useReleases(url?)` and `useWhatsNew({ storageKey, url? })` in `src/releases/`, the components `VersionChip`, `ReleasesPanel` and `ReleasesDrawer` in `src/releases/`, and `Drawer` and `useMediaQuery(query)` (so a host derives the drawer's `narrow` from its own breakpoint) in `src/ui/`, styled by `ui-kit/styles.css` (see §Tokens); shared test data lives in `fixtures/releases.ts`, which is never shipped, and the dev-only playground in `playground/` is never shipped either (see §Developing).
 
 ## Rules
 
@@ -72,10 +72,16 @@ npm install
 npm run build      # regenerates dist/ (esm, cjs, .d.ts, styles.css)
 npm test           # node:test via tsx (hook tests on a jsdom global); includes the dist-drift test
 npm run typecheck
+npm run dev        # the playground: every fixture under three approximate app themes, plus a real drawer
 ```
 
 Run `npm run build` before `npm test`, and commit `dist/` with every `src/` change: the dist-drift test fails when the committed `dist/` differs from a fresh
 build.
+
+`npm run dev` serves `playground/` with Vite: each fixture in `fixtures/releases.ts` as a chip and an open panel, side by side under three token maps in
+`playground/themes.css` that approximate guide-manager (midnight), backlog-manager (daylight) and the dashboard (graphite), and one button per theme that
+opens a real `ReleasesDrawer`. The maps are copied by hand and nothing keeps them in step with the apps, so an app's real look is still checked in that app.
+The playground is never built into `dist/` and never shipped.
 
 ## Releases
 

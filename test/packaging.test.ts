@@ -82,3 +82,10 @@ it('the README §Tokens lists exactly the tokens src/styles.css reads', () => {
 it('dist/styles.css equals src/styles.css', () => {
   assert.equal(readFileSync(join(dist, 'styles.css'), 'utf8'), css, 'dist/styles.css is stale — run npm run build');
 });
+
+// The playground (playground/, vite.config.ts, npm run dev) is dev-only: scripts/build.mjs never builds it and files: ["dist"] never ships it.
+it('no path under dist/ contains playground', () => {
+  const paths = readdirSync(dist, { recursive: true }) as string[];
+  assert.ok(paths.length > 0, 'dist/ is empty — run npm run build');
+  for (const p of paths) assert.doesNotMatch(p, /playground/i, `dist/${p} is playground output — the playground is never built into dist/`);
+});

@@ -1,0 +1,135 @@
+/* Three approximate token maps, one per app, so a ui-kit change can be seen in all three looks before it ships (spec D18). Approximate on purpose: the
+   values are copied by hand from each app's own stylesheet in one of its themes, and nothing keeps them in step — an app's real look is checked in that app.
+   The three apps share one design system, so each column takes a different theme of it to cover the range:
+   - guide-manager: midnight, the default dark navy (guide-manager shared/theme.css).
+   - backlog-manager: daylight, the light theme (backlog-manager shared/theme.css).
+   - dashboard: graphite, the neutral dark (claude-agents-dashboard client/src/styles.css). */
+
+.pg-theme-guide-manager {
+  --uk-panel-bg: #182238;
+  --uk-ink: #dde6f4;
+  --uk-ink-muted: #9fadc6;
+  --uk-hairline: #2a3752;
+  --uk-scrim: rgba(4, 8, 16, .66);
+  --uk-shadow: rgba(0, 0, 0, .4);
+  --uk-accent: #55d0dd;
+  --uk-hover-bg: rgba(255, 255, 255, .06);
+  --uk-code-bg: #131a2b;
+  --uk-feat-ink: #46d48c;
+  --uk-feat-tint: rgba(70, 212, 140, .18);
+  --uk-fix-ink: #ffb03a;
+  --uk-fix-tint: rgba(255, 176, 58, .11);
+  --uk-perf-ink: #d181ab;
+  --uk-perf-tint: rgba(207, 111, 158, .14);
+  --uk-breaking-ink: #df786c;
+  --uk-breaking-tint: rgba(224, 83, 63, .14);
+  --uk-font: 'Hanken Grotesk', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --uk-font-mono: 'IBM Plex Mono', 'SF Mono', 'JetBrains Mono', monospace;
+  --pg-bg: #0c1220;
+}
+
+.pg-theme-backlog-manager {
+  --uk-panel-bg: #ffffff;
+  --uk-ink: #131313;
+  --uk-ink-muted: #525252;
+  --uk-hairline: #eaeae8;
+  --uk-scrim: rgba(0, 0, 0, .35);
+  --uk-shadow: rgba(0, 0, 0, .12);
+  --uk-accent: #306c0f;
+  --uk-hover-bg: #f2f2f1;
+  --uk-code-bg: #ededec;
+  --uk-feat-ink: #38631a;
+  --uk-feat-tint: #e6f0df;
+  --uk-fix-ink: #8a5214;
+  --uk-fix-tint: #f8ecdc;
+  --uk-perf-ink: #7d1f6b;
+  --uk-perf-tint: #f8e4f3;
+  --uk-breaking-ink: #9b1c1c;
+  --uk-breaking-tint: #fde4e4;
+  --uk-font: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pg-bg: #f4f4f3;
+}
+
+.pg-theme-dashboard {
+  --uk-panel-bg: #1f2124;
+  --uk-ink: #e4e5e7;
+  --uk-ink-muted: #a6a9ae;
+  --uk-hairline: #33363b;
+  --uk-scrim: rgba(0, 0, 0, .66);
+  --uk-shadow: rgba(0, 0, 0, .45);
+  --uk-accent: #6fc5cf;
+  --uk-hover-bg: #282b2f;
+  --uk-code-bg: #191b1e;
+  --uk-feat-ink: #5ac98a;
+  --uk-feat-tint: rgba(90, 201, 138, .18);
+  --uk-fix-ink: #e6a445;
+  --uk-fix-tint: rgba(230, 164, 69, .11);
+  --uk-perf-ink: #c47fa4;
+  --uk-perf-tint: rgba(196, 127, 164, .14);
+  --uk-breaking-ink: #dd5f4c;
+  --uk-breaking-tint: rgba(221, 95, 76, .14);
+  --uk-font: 'Hanken Grotesk', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pg-bg: #111214;
+}
+
+/* The page itself: playground layout only, nothing ui-kit ships. */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+
+.pg-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.pg-header h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.pg-themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+}
+
+.pg-theme {
+  background: var(--pg-bg);
+  color: var(--uk-ink);
+  font-family: var(--uk-font);
+  padding: 16px;
+  min-width: 0;
+}
+
+.pg-theme h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.pg-fixture {
+  margin: 0 0 16px;
+  border: 1px solid var(--uk-hairline);
+  border-radius: 8px;
+  background: var(--uk-panel-bg);
+  overflow: hidden;
+}
+
+.pg-fixture-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--uk-hairline);
+  color: var(--uk-ink-muted);
+  font: 12px var(--uk-font-mono, monospace);
+}
+
+.pg-fixture-body {
+  max-height: 420px;
+  overflow: auto;
+  padding: 12px;
+}
