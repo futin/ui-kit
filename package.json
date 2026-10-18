@@ -11,7 +11,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test 'test/**/*.test.ts'"
+    "test": "node --import tsx --test 'test/**/*.test.{ts,tsx}'"
   },
   "main": "./dist/cjs/index.js",
   "types": "./dist/esm/index.d.ts",
@@ -30,8 +30,10 @@
     "react": "^18.3 || ^19"
   },
   "devDependencies": {
+    "@types/jsdom": "30.0.0",
     "@types/node": "22.20.5",
     "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "jsdom": "30.1.3",
     "react": "19.3.1",

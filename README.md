@@ -5,7 +5,7 @@ app themes through `--uk-*` custom properties, so one implementation renders in 
 
 The first content is the releases UI (version chip and What's new drawer), designed in release-kit's
 `docs/superpowers/specs/2026-10-18-shared-releases-ui-design.md`. So far the package exports its wire types (`Release`, `ReleasesResponse`, `ReleaseType`) and the pure releases logic in `src/releases/logic.ts` (`isVersion`, `compareVersions`, `chipLabel`, `displayTitle`, `TYPE_LABEL`, `dotState`, `readLastSeen(key)`, `writeLastSeen(key, v)`, `formatReleaseDate`, `isReleasesResponse`) and the default notes renderer in `src/releases/notes.ts` (`renderNotesHtml(md)`, escape-first, safe to set
-with no app sanitiser behind it); shared test data lives in `fixtures/releases.ts`, which is never shipped.
+with no app sanitiser behind it) and the hooks `useReleases(url?)` and `useWhatsNew({ storageKey, url? })` in `src/releases/`; shared test data lives in `fixtures/releases.ts`, which is never shipped.
 
 ## Rules
 
@@ -39,7 +39,7 @@ The package resolves to ESM for bundlers and to CommonJS for `require`, with `.d
 ```bash
 npm install
 npm run build      # regenerates dist/ (esm, cjs, .d.ts, styles.css)
-npm test           # node:test via tsx; includes the dist-drift test
+npm test           # node:test via tsx (hook tests on a jsdom global); includes the dist-drift test
 npm run typecheck
 ```
 
