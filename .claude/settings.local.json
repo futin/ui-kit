@@ -1,0 +1,15 @@
+{
+  "enabledMcpjsonServers": [
+    "playwright"
+  ],
+  "enableAllProjectMcpServers": true,
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge:*)",
+      "Bash(git push origin main)",
+      "Bash(pnpm run plugin:sync)"
+    ]
+  }
+}
