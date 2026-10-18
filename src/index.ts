@@ -1,2 +1,2 @@
-// ui-kit public surface. Empty until the first components land.
-export {};
+// ui-kit public surface.
+export type { Release, ReleasesResponse, ReleaseType } from './types.js';
