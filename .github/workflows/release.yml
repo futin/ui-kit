@@ -1,0 +1,37 @@
+name: release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: The commit to release up to (a re-run of a missed or failed release)
+        required: false
+        default: ''
+permissions:
+  contents: write
+  pull-requests: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    uses: futin/release-kit/.github/workflows/release.yml@v1
+    with:
+      sha: ${{ inputs.sha }}
+      kit-ref: v1
+  # Opens a `chore(deps): bump ui-kit to vX.Y.Z` PR in every consumer that is behind (release-kit README §Bump PRs). Idempotent, so it runs after every
+  # release run, including one that released nothing. BUMP_TOKEN is a fine-grained PAT scoped to the consumers; a PR opened with GITHUB_TOKEN starts no CI.
+  bump:
+    needs: release
+    uses: futin/release-kit/.github/workflows/bump-consumers.yml@v1
+    with:
+      package: ui-kit
+      repository: futin/ui-kit
+      consumers: |
+        futin/claude-agents-dashboard
+        futin/backlog-manager
+        futin/guide-manager
+      kit-ref: v1
+    secrets:
+      token: ${{ secrets.BUMP_TOKEN }}
