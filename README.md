@@ -4,7 +4,7 @@ Shared React UI for futin's apps — claude-agents-dashboard, backlog-manager an
 app themes through `--uk-*` custom properties, so one implementation renders in three different visual systems.
 
 The first content is the releases UI (version chip and What's new drawer), designed in release-kit's
-`docs/superpowers/specs/2026-10-18-shared-releases-ui-design.md`. So far the package exports only its wire types (`Release`, `ReleasesResponse`, `ReleaseType`); shared test data lives in `fixtures/releases.ts`, which is never shipped.
+`docs/superpowers/specs/2026-10-18-shared-releases-ui-design.md`. So far the package exports its wire types (`Release`, `ReleasesResponse`, `ReleaseType`) and the pure releases logic in `src/releases/logic.ts` (`isVersion`, `compareVersions`, `chipLabel`, `displayTitle`, `TYPE_LABEL`, `dotState`, `readLastSeen(key)`, `writeLastSeen(key, v)`, `formatReleaseDate`, `isReleasesResponse`); shared test data lives in `fixtures/releases.ts`, which is never shipped.
 
 ## Rules
 
