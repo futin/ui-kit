@@ -20,7 +20,7 @@ The user's rule: **ui-kit owns every shape; an app owns only its colours and fon
 
 ## Non-goals
 
-- The chip's label format. `v0.2.0+3` means three commits past the `v0.2.0` tag; it is release-kit's `chipLabel`, identical in every app, and stays.
+- The chip's label format. `v0.2.0+3` means three commits past the `v0.2.0` tag; it is ui-kit's `chipLabel` (`src/releases/logic.ts`), identical in every app, and stays.
 - Any other ui-kit component (there are none yet beyond `Drawer`, which the releases drawer is).
 - Where an app puts the chip. Placement — which element it sits in, `margin-top: auto` to sink it to the rail's foot — stays the app's (see D3).
 
@@ -59,12 +59,14 @@ Chip (`.uk-chip`):
 
 Note backlog-manager maps `--uk-ink-muted` to `--ink3` but draws the chip in `--ink2`. Under this design the chip is `--uk-ink-muted`, so the chip in
 backlog-manager gets a shade lighter unless that app remaps `--uk-ink-muted` to `--ink2` — which also lightens/darkens the drawer's dates and notes.
-Builder's call per app; the guard does not care which colour token an app picks.
+guide-manager shifts the other way: `.rail-version` draws its chip in `--ink3` today, and its `--uk-ink-muted` is `--ink2`, so its chip gets a shade
+darker, and the comment at `shared/theme.css:168-169` ("The chip keeps its --ink3") becomes false and is rewritten. Builder's call per app; the guard does
+not care which colour token an app picks.
 
 Drawer:
 
 - panel: `width: min(400px, calc(100vw / var(--uk-zoom, 1)))`, `height: calc(100dvh / var(--uk-zoom, 1))` (keep the `100vh` line before it for browsers
-  without `dvh`), `border-left: 1px solid --uk-hairline`, `box-shadow: -24px 0 64px --uk-shadow`;
+  without `dvh`, divided by `--uk-zoom` the same way), `border-left: 1px solid --uk-hairline`, `box-shadow: -24px 0 64px --uk-shadow`;
 - narrow: `width: calc(100vw / var(--uk-zoom, 1))`, no left border, no shadow, padding `20px 16px` as today;
 - heading 19px (backlog-manager's `--uk-font-size-lg`);
 - notes 13px, below the 14px title; `.uk-releases-notes h3` 13 / 600 / `--uk-ink`, margin `10px 0 4px`; the first child of the notes has no top margin;
@@ -95,9 +97,11 @@ overhangs at a non-1 scale — worth confirming while there). ui-kit divides its
 minor while ui-kit is 0.x (builder check confirmed). README §Tokens is rewritten to D1's set, and §Rules gains the rule itself: *hosts map tokens
 and nothing else; every `.uk-*` rule lives in this sheet.* The sentence in §Tokens about layout classes stays true and is joined by sizes.
 
-ui-kit's release workflow opens an automatic `chore(deps): bump ui-kit to v0.3.0` PR in each consumer. That PR will fail typecheck in guide-manager and
-the dashboard (`className` passed) and render a doubled style in backlog-manager — so each app's cleanup lands **on** that bump PR (or replaces it), never
-after it. Each app's PR is retitled `fix(releases): one look for the version chip and What's new drawer` (or close to it) with a `## What's new`
+ui-kit's release workflow opens an automatic `chore(deps): bump ui-kit to v0.3.0` PR in each consumer. That PR will fail typecheck in all three apps —
+each passes `className` to `VersionChip` and `renderNotes` to `ReleasesDrawer` — so each app's cleanup lands **on** that bump PR (or replaces it), never
+after it. The bump PR arrives with GitHub auto-merge enabled (release-kit README §bump; all three consumers allow auto-merge), so the first push that turns
+CI green would merge it as `chore(deps)` with no release: **disable auto-merge on the bump PR before pushing to it**, and do not re-run ui-kit's bump
+workflow while cleanup sits on that branch — a re-run force-pushes a bump branch it finds. Each app's PR is retitled `fix(releases): one look for the version chip and What's new drawer` (or close to it) with a `## What's new`
 section, so the visible change cuts a release in that app (user's call).
 
 **D7 — A guard test in each app (user's call).** It reads the app's own stylesheets (every `.css` under its client source and, for guide-manager,
@@ -135,7 +139,9 @@ shows as text), backlog-manager its `renderMarkdown` (`marked`-based), the dashb
   `**bold**`, `_em_`, and `[text](url)` links. It stays escape-first: everything is escaped, then only these constructs are turned back into tags, and a
   link's `href` must be `http(s):` (anything else renders as text). No raw HTML passes through. Builder's call whether to keep the hand-written renderer or
   vendor a small dependency — the rule above is the contract either way, and ui-kit's tests cover each construct plus the hostile cases (`<script>`,
-  `javascript:` link, an `onerror` attribute in the text).
+  `javascript:` link, an `onerror` attribute in the text). `_em_` and `**bold**` open only at a word boundary and close only before one, so a
+  `snake_case_name` stays plain text. Heading depths other than `###` (`#`, `##`, `####`…) render as plain paragraphs with the hashes kept — a `## What's
+  new` body should not contain them, and a visible `##` shows the author the mistake. Both rules get test cases.
 - `ReleasesDrawer`/`ReleasesPanel` lose `renderNotes`. In its place `sanitize?: (html: string) => string` (author's call): a host may run ui-kit's HTML
   through its own sanitiser before it is set — guide-manager keeps its second wall (`sanitizeSnapshot`, CLAUDE.md's "notes' second sanitising wall") — but
   cannot change the markup, so the notes cannot drift. A sanitiser that strips tags would change the look; that is accepted, the wall is a safety net.
@@ -146,16 +152,19 @@ shows as text), backlog-manager its `renderMarkdown` (`marked`-based), the dashb
 - **guide-manager** — `SideRail.tsx`: wrap the chip, drop `className`; `client/src/styles.css`: `.rail-version` becomes the wrapper's layout-only rule,
   delete `.uk-drawer { height … }`; `shared/theme.css`: add `--uk-zoom`, `--uk-chip-bg` (→ `--steel`); check the badge contrast suite
   (`test/theme-tokens.test.ts`) still passes — badge weight drops to 500, colours unchanged; update the CLAUDE.md invariant that describes the chip and
-  `.uk-drawer`'s height rule; pass `narrow` to the chip; swap `renderNotes` for `sanitize={sanitizeSnapshot}`; fix `test/releases-ui.test.tsx`
-  (`.rail .rail-version` selectors) and rewrite `test/phone-css.test.ts:56` (D3). Add the guard.
+  `.uk-drawer`'s height rule; pass `narrow` to the chip — `SideRail.tsx` has no breakpoint today, the 639px query is a private `const NARROW` in
+  `ReleasesDrawer.tsx:15`, so lift it into a shared module both read via `useMediaQuery`; swap `renderNotes` for `sanitize={sanitizeSnapshot}`; fix
+  `test/releases-ui.test.tsx:39-40` (`.rail .rail-version` would now be the wrapper div, which has no `onClick` — target the inner `.uk-chip` button) and
+  rewrite `test/phone-css.test.ts:56` (D3). Add the guard.
 - **backlog-manager** — `SideRail.tsx` wrap; delete `.rail-release`'s visual declarations (keep placement on the wrapper) and the whole `.uk-*` block at
-  ~2757–2770; remove `--uk-font-size-lg`; add `--uk-zoom`, `--uk-chip-bg`. Update `test/rail.test.tsx` if it asserts the chip's class. DESIGN.md §8.7 and
+  ~2757–2770; remove `--uk-font-size-lg`; add `--uk-zoom`, `--uk-chip-bg`. `test/rail.test.tsx:362` breaks: `expect(nav.lastElementChild).toBe(chip())` — the nav's last child is now the wrapper, so assert the
+wrapper is last and holds the chip. `.claude/DESIGN.md` §8.7 and
   §8.10 now describe ui-kit's look — point them at ui-kit rather than restating values. Drop `renderNotes` (its `renderMarkdown` stays for the item
   modal); pass `narrow`; prune `test/ui-kit-tokens.test.ts`'s `KIT_DEFAULT`. Add the guard.
 - **claude-agents-dashboard** — `SideRail.tsx` wrap; `.rel-chip` keeps only placement (`margin`, `align-self`, `.foot + …` spacing) and moves to the
   wrapper; delete `.uk-releases-notes .md` and `--uk-font-size-lg` (`--uk-z` stays — integration); add `--uk-zoom`, `--uk-chip-bg` (the mapping on
   `.uk-chip,.uk-drawer-scrim` carries `--uk-zoom` fine — `--font-scale` inherits from the root). Drop `renderNotes`; pass `narrow`. Fix
-  `test/releases-client.test.ts:91` (asserts `className="rel-chip"`), `test/visual/views.spec.ts:88` (clicks `.rel-chip`; the `releases` visual
+  `test/releases-client.test.ts:91` (asserts `className="rel-chip"`) and `:95-100` (asserts the source text `renderNotes={t => <Markdown text={t} />}`), `test/visual/views.spec.ts:88` (clicks `.rel-chip`; the `releases` visual
   baselines will change — re-record them), and `docs/subsystems/releases.md:39`. Add the guard.
 
 After each, look at the rail and open the drawer in the running app, light and dark, at font-scale 1 and one other value.
