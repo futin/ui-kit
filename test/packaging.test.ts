@@ -4,6 +4,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { PUBLIC_TOKENS } from '../src/guard.js';
 
 // What a consumer installs is dist/ and nothing else (files: ["dist"]), so the entry points package.json names must be in it, and no built module may pull a
 // stylesheet in: guide-manager and backlog-manager run Jest over CommonJS, which cannot load a .css import. The host imports ui-kit/styles.css itself.
@@ -42,14 +43,10 @@ const css = readFileSync(join(root, 'src/styles.css'), 'utf8');
 const noComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
 const tokens = (text: string) => new Set(text.match(/--uk-[a-z0-9-]+/g) ?? []);
 
-it('src/styles.css is not empty and reads the minimum tokens the spec names', () => {
+it('the tokens src/styles.css reads are exactly the public set — no more, no fewer', () => {
   const read = tokens(noComments);
-  for (const t of ['--uk-panel-bg', '--uk-ink', '--uk-ink-muted', '--uk-hairline', '--uk-scrim', '--uk-accent', '--uk-font', '--uk-font-mono', '--uk-radius', '--uk-drawer-width', '--uk-z']) {
-    assert.ok(read.has(t), `${t} is missing from src/styles.css`);
-  }
-  for (const type of ['feat', 'fix', 'perf', 'breaking']) {
-    for (const part of ['ink', 'tint']) assert.ok(read.has(`--uk-${type}-${part}`), `--uk-${type}-${part} is missing from src/styles.css`);
-  }
+  for (const t of PUBLIC_TOKENS) assert.ok(read.has(t), `${t} is public but src/styles.css never reads it`);
+  for (const t of read) assert.ok(PUBLIC_TOKENS.includes(t), `src/styles.css reads ${t}, which is not in PUBLIC_TOKENS — sizes and geometry are literals, not tokens`);
 });
 
 it('every var(--uk-…) in src/styles.css has a fallback', () => {
