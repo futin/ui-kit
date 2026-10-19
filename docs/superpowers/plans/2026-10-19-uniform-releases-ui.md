@@ -240,18 +240,20 @@ invariant: tokens only, guarded by `test/ui-kit-guard.test.ts`; drop the `.uk-dr
 **Files:** Create `test/ui-kit-guard.test.ts`. Modify `client/src/components/SideRail.tsx` (wrap; `narrow={narrow}` — the `useNarrow()` it already holds),
 `client/src/components/ReleasesDrawer.tsx` (drop `renderNotes`), `client/src/styles.css` (`.rail-release` keeps placement only, on the wrapper; delete
 ~2747–2770's `.uk-*` block and its comment; drop `--uk-font-size-lg`; add `--uk-chip-bg: var(--steel)`, `--uk-zoom: var(--font-scale, 1)`),
-`test/rail.test.tsx:364` and `:387` (both `nav.lastElementChild` assertions: the wrapper is the nav's last child and contains the chip), `test/ui-kit-tokens.test.ts` (all of `KIT_DEFAULT` is removed
-tokens, so its read-but-unmapped test goes; fix its `:23` comment), `test/releases-drawer.test.tsx:40-46,101` (the `###`-as-text comment and assertion now hold for ui-kit's renderer — rewrite to assert an `h3`),
+`test/rail.test.tsx:364` and `:387` (both `nav.lastElementChild` assertions: the wrapper is the nav's last child and contains the chip), `test/ui-kit-tokens.test.ts` (every `KIT_DEFAULT` entry is a removed
+token: delete the map, its `:18` docblock and the then-vacuous `:46` assertion; keep the `:34-40` test, which becomes "every token the kit reads is
+mapped"), `test/releases-drawer.test.tsx:40-46,101` (the `###`-as-text comment and assertion now hold for ui-kit's renderer — rewrite to assert an `h3`),
 `.claude/DESIGN.md` §8.7/§8.10 (point at ui-kit instead of restating values), `docs/subsystems/releases.md:73`, `CLAUDE.md` +
 `docs/subsystems/invariants.md` (spec: one invariant line pointing at the guard — in CLAUDE.md a headline-only bullet linking a new
-`invariants.md#…` anchor, the shape `test/claude-rules.test.ts`'s `HEADLINE_ONLY` enforces; the body goes in `invariants.md`).
+`invariants.md#…` anchor, the shape `test/claude-rules.test.ts`'s `HEADLINE_ONLY` enforces; the body goes in `invariants.md`; the same (anchor, headline) bullet also goes
+in `.claude/rules/board.md`, because that suite requires CLAUDE.md and the rule files to carry the same pairs).
 
 - [ ] **Step 1:** Guard test (sheets: every `.css` under `client/src` and `shared/`).
 - [ ] **Step 2:** `pnpm exec jest test/ui-kit-guard.test.ts` — FAIL naming `.uk-drawer`, `.uk-releases-notes`, `--uk-font-size-lg`.
 - [ ] **Step 3:** Clean up as listed. Decide `--uk-ink-muted` (`--ink3` today; the chip used `--ink2`): keep `--ink3` unless the pill reads too faint
   against `--steel` in daylight — note the choice in the commit body.
 - [ ] **Step 4:** `pnpm run typecheck && pnpm exec jest test/ui-kit-guard.test.ts test/rail.test.tsx test/ui-kit-tokens.test.ts
-  test/releases-drawer.test.tsx test/releases-app.test.tsx` — PASS. Manual check.
+  test/releases-drawer.test.tsx test/releases-app.test.tsx test/claude-rules.test.ts` — PASS. Manual check.
 - [ ] **Step 5:** Commit; ask before pushing.
 
 ### Task 9: claude-agents-dashboard
@@ -267,8 +269,9 @@ baselines), `docs/subsystems/releases.md:39`, `client/src/main.tsx:11` comment, 
 has no Invariants section).
 
 - [ ] **Step 1:** Guard test (sheets: every `.css` under `client/src`).
-- [ ] **Step 2:** `pnpm exec tsx test/run-all.ts` with the new suite registered (the only way a suite runs here) — the guard suite FAILs naming `.uk-releases-notes .md` and
+- [ ] **Step 2:** register the suite in `run-all.ts` (for CI), but run it alone — `run-all.ts` takes no filter and is the full suite, which this repo
+  forbids locally before a push: `pnpm exec tsx --eval "import('./test/ui-kit-guard.test.ts').then(m => process.exit(m.run()))"` — FAIL naming `.uk-releases-notes .md` and
   `--uk-font-size-lg`.
 - [ ] **Step 3:** Clean up as listed.
-- [ ] **Step 4:** `pnpm run typecheck` and the guard + `releases-client` suites — PASS; visual suite for `releases` re-recorded. Manual check.
+- [ ] **Step 4:** `pnpm run typecheck`, then the Step 2 form for `ui-kit-guard` and for `releases-client` — PASS; visual suite for `releases` re-recorded. Manual check.
 - [ ] **Step 5:** Commit; ask before pushing.
