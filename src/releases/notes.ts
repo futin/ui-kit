@@ -8,12 +8,17 @@ function escapeHtml(s: string): string {
 
 // Over ALREADY escaped text, so a `"` in the url is `&quot;` by now and cannot close the href. Only http(s) matches: a `javascript:` link stays text.
 const LINK = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/;
-const BOLD = /\*\*([^*\n]+)\*\*/g;
+// Word boundaries, so `snake_case_name`, `a_b_ c` and `x**y**z` stay text: an opener sits at the line start or after a non-word character and is followed by
+// a non-space; a closer follows a non-space and sits at the line end or before a non-word character. `\w` counts `_` as a word character on purpose.
+const BOLD = /(?<!\w)\*\*(?=\S)([^*\n]+?)(?<=\S)\*\*(?!\w)/g;
+const EM = /(?<!\w)_(?=\S)([^_\n]+?)(?<=\S)_(?!\w)/g;
 const BULLET = /^\s*[-*] +/;
+// Exactly three hashes and a space: `#`, `##` and `####` are not headings the notes use, so they show as the literal text they are.
+const H3 = /^###\s+(\S.*)$/;
 
-const bold = (text: string): string => text.replace(BOLD, '<strong>$1</strong>');
+const emphasis = (text: string): string => text.replace(BOLD, '<strong>$1</strong>').replace(EM, '<em>$1</em>');
 
-/** One line's inline markup, over text that is ALREADY escaped: `code` spans first and left alone, then links, then bold outside the hrefs. */
+/** One line's inline markup, over text that is ALREADY escaped: `code` spans first and left alone, then links, then bold and emphasis outside the hrefs. */
 function inline(escaped: string): string {
   return escaped
     .split(/(`[^`\n]+`)/)
@@ -23,8 +28,8 @@ function inline(escaped: string): string {
       const pieces = part.split(new RegExp(LINK.source, 'g'));
       let html = '';
       for (let j = 0; j < pieces.length; j += 3) {
-        html += bold(pieces[j]);
-        if (j + 2 < pieces.length) html += `<a href="${pieces[j + 2]}" target="_blank" rel="noopener noreferrer">${bold(pieces[j + 1])}</a>`;
+        html += emphasis(pieces[j]);
+        if (j + 2 < pieces.length) html += `<a href="${pieces[j + 2]}" target="_blank" rel="noopener noreferrer">${emphasis(pieces[j + 1])}</a>`;
       }
       return html;
     })
@@ -32,9 +37,10 @@ function inline(escaped: string): string {
 }
 
 /**
- * The subset a notes section uses: paragraphs (a blank line between, a single newline is a `<br>`), `- ` / `* ` bullet lists, `code`, **bold** and
- * `[text](https://…)`. Everything is HTML-escaped BEFORE any markup is added, so a `<script>` or an `<img onerror>` arrives as its own text. Anything else
- * in the Markdown shows as the literal text it is. Empty notes render `''`.
+ * The subset a notes section uses: `### ` headings (an `<h3>`, its own block), paragraphs (a blank line between, a single newline is a `<br>`), `- ` / `* `
+ * bullet lists, `code`, **bold**, _emphasis_ and `[text](https://…)`; the emitted elements are exactly `p br ul li code strong em a h3`. Everything is
+ * HTML-escaped BEFORE any markup is added, so a `<script>` or an `<img onerror>` arrives as its own text. Anything else in the Markdown shows as the literal
+ * text it is. Empty notes render `''`.
  */
 export function renderNotesHtml(md: string): string {
   const out: string[] = [];
@@ -52,6 +58,11 @@ export function renderNotesHtml(md: string): string {
     if (raw.trim() === '') {
       flushPara();
       flushList();
+    } else if (H3.test(raw.trim())) {
+      // A heading ends whatever block is open and is a block of its own, so the line after it starts a fresh paragraph or list.
+      flushPara();
+      flushList();
+      out.push(`<h3>${inline(escapeHtml(raw.trim().replace(/^###\s+/, '')))}</h3>`);
     } else if (BULLET.test(raw)) {
       flushPara();
       list.push(inline(escapeHtml(raw.replace(BULLET, '').trim())));
