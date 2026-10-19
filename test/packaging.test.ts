@@ -10,14 +10,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const dist = join(root, 'dist');
 
-it('dist/ holds the esm, cjs and type entry points and the stylesheet', () => {
-  for (const f of ['esm/index.js', 'cjs/index.js', 'esm/index.d.ts', 'styles.css']) assert.ok(existsSync(join(dist, f)), `dist/${f} is missing — run npm run build`);
+it('dist/ holds the esm, cjs and type entry points (index and guard) and the stylesheet', () => {
+  for (const f of ['esm/index.js', 'cjs/index.js', 'esm/index.d.ts', 'esm/guard.js', 'cjs/guard.js', 'esm/guard.d.ts', 'styles.css']) assert.ok(existsSync(join(dist, f)), `dist/${f} is missing — run npm run build`);
 });
 
 it('package.json points its entry points into dist/', () => {
   const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
   assert.deepEqual(pkg.exports, {
     '.': { types: './dist/esm/index.d.ts', import: './dist/esm/index.js', require: './dist/cjs/index.js' },
+    './guard': { types: './dist/esm/guard.d.ts', import: './dist/esm/guard.js', require: './dist/cjs/guard.js' },
     './styles.css': './dist/styles.css',
   });
   assert.equal(pkg.main, './dist/cjs/index.js');
@@ -105,6 +106,27 @@ it('import(dist/esm/index.js) exposes ReleasesDrawer, useWhatsNew and renderNote
   const esm = await import(pathToFileURL(join(dist, 'esm/index.js')).href);
   for (const name of surface) assert.equal(typeof esm[name], 'function', `the ESM build does not export ${name}`);
   assert.equal(esm.renderNotesHtml('**a**'), '<p><strong>a</strong></p>');
+});
+
+// The guard is the dev-only entry an app's own test imports (`ui-kit/guard`); it must load in both module systems and stay out of the main entry's bundle.
+it('require(dist/cjs/guard.js) exposes checkHostCss and PUBLIC_TOKENS', () => {
+  const cjs = createRequire(import.meta.url)(join(dist, 'cjs/guard.js'));
+  assert.equal(typeof cjs.checkHostCss, 'function');
+  assert.equal(cjs.PUBLIC_TOKENS.length, 22);
+  assert.deepEqual(cjs.checkHostCss('.uk-chip { color: red }').length, 1);
+});
+
+it('import(dist/esm/guard.js) exposes checkHostCss and PUBLIC_TOKENS', async () => {
+  const esm = await import(pathToFileURL(join(dist, 'esm/guard.js')).href);
+  assert.equal(typeof esm.checkHostCss, 'function');
+  assert.equal(esm.PUBLIC_TOKENS.length, 22);
+  assert.deepEqual(esm.checkHostCss(':root { --uk-ink: #111 }'), []);
+});
+
+it('the main entry does not export the guard, so nothing of it reaches an app client bundle', async () => {
+  const esm = await import(pathToFileURL(join(dist, 'esm/index.js')).href);
+  assert.equal(esm.checkHostCss, undefined);
+  assert.equal(esm.PUBLIC_TOKENS, undefined);
 });
 
 // React is a peer: the consumer's copy must be the one that renders, or hooks break across two Reacts. So dist/ reaches React only through bare `react`

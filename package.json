@@ -22,6 +22,11 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
     },
+    "./guard": {
+      "types": "./dist/esm/guard.d.ts",
+      "import": "./dist/esm/guard.js",
+      "require": "./dist/cjs/guard.js"
+    },
     "./styles.css": "./dist/styles.css"
   },
   "files": [

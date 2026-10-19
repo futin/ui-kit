@@ -66,6 +66,14 @@ import { ReleasesDrawer, VersionChip, useWhatsNew } from 'ui-kit';
 The package resolves to ESM for bundlers and to CommonJS for `require`, with `.d.ts` types for both. React comes from the app: `react` is a peer, and
 nothing in `dist/` bundles a copy of it (`test/packaging.test.ts` checks both builds load and that the only package `dist/` reaches is `react`).
 
+Add the guard to the app's own tests: it reads the app's stylesheets and fails on any rule that restyles a `.uk-*` class or sets a `--uk-*` property that is
+not a public token. It is dev-only — `ui-kit/guard` is its own entry and the main entry never exports it, so it stays out of the client bundle.
+
+```ts
+import { checkHostCss } from 'ui-kit/guard'; // also exports PUBLIC_TOKENS, the 22 tokens an app may map
+it('maps tokens and never restyles the kit', () => expect(checkHostCss(readFileSync('client/src/theme.css', 'utf8'))).toEqual([])); // read each sheet
+```
+
 Each app wraps `ReleasesDrawer` once in its shell, fed by `const w = useWhatsNew({ storageKey })`. The drawer accepts the host's dismiss and focus layer
 instead of owning one, so the wrapper is one of three shapes:
 
