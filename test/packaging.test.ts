@@ -4,25 +4,36 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { PUBLIC_TOKENS } from '../src/guard.js';
 
 // What a consumer installs is dist/ and nothing else (files: ["dist"]), so the entry points package.json names must be in it, and no built module may pull a
 // stylesheet in: guide-manager and backlog-manager run Jest over CommonJS, which cannot load a .css import. The host imports ui-kit/styles.css itself.
 const root = fileURLToPath(new URL('..', import.meta.url));
 const dist = join(root, 'dist');
 
-it('dist/ holds the esm, cjs and type entry points and the stylesheet', () => {
-  for (const f of ['esm/index.js', 'cjs/index.js', 'esm/index.d.ts', 'styles.css']) assert.ok(existsSync(join(dist, f)), `dist/${f} is missing — run npm run build`);
+it('dist/ holds the esm, cjs and type entry points (index and guard) and the stylesheet', () => {
+  for (const f of ['esm/index.js', 'cjs/index.js', 'esm/index.d.ts', 'esm/guard.js', 'cjs/guard.js', 'esm/guard.d.ts', 'styles.css']) assert.ok(existsSync(join(dist, f)), `dist/${f} is missing — run npm run build`);
 });
 
 it('package.json points its entry points into dist/', () => {
   const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
   assert.deepEqual(pkg.exports, {
     '.': { types: './dist/esm/index.d.ts', import: './dist/esm/index.js', require: './dist/cjs/index.js' },
+    './guard': { types: './dist/esm/guard.d.ts', import: './dist/esm/guard.js', require: './dist/cjs/guard.js' },
     './styles.css': './dist/styles.css',
   });
   assert.equal(pkg.main, './dist/cjs/index.js');
   assert.equal(pkg.types, './dist/esm/index.d.ts');
   assert.deepEqual(pkg.files, ['dist']);
+});
+
+// TypeScript's node10 resolution (`moduleResolution: "node"`, which guide-manager and backlog-manager still use) ignores `exports`, so `ui-kit/guard` would be a
+// TS2307 there; `typesVersions` is the field node10 does read. Bundler and node16 resolution keep using `exports`.
+it('typesVersions maps ui-kit/guard to a declaration file that exists in dist/, for node10 resolution', () => {
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  assert.deepEqual(pkg.typesVersions, { '*': { guard: ['./dist/esm/guard.d.ts'] } });
+  assert.equal(pkg.typesVersions['*'].guard[0], pkg.exports['./guard'].types, 'the two routes to the guard types must agree');
+  assert.ok(existsSync(join(root, pkg.typesVersions['*'].guard[0])), 'the mapped declaration file is missing from dist/');
 });
 
 it('no file under dist/ imports or requires a stylesheet', () => {
@@ -41,14 +52,10 @@ const css = readFileSync(join(root, 'src/styles.css'), 'utf8');
 const noComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
 const tokens = (text: string) => new Set(text.match(/--uk-[a-z0-9-]+/g) ?? []);
 
-it('src/styles.css is not empty and reads the minimum tokens the spec names', () => {
+it('the tokens src/styles.css reads are exactly the public set — no more, no fewer', () => {
   const read = tokens(noComments);
-  for (const t of ['--uk-panel-bg', '--uk-ink', '--uk-ink-muted', '--uk-hairline', '--uk-scrim', '--uk-accent', '--uk-font', '--uk-font-mono', '--uk-radius', '--uk-drawer-width', '--uk-z']) {
-    assert.ok(read.has(t), `${t} is missing from src/styles.css`);
-  }
-  for (const type of ['feat', 'fix', 'perf', 'breaking']) {
-    for (const part of ['ink', 'tint']) assert.ok(read.has(`--uk-${type}-${part}`), `--uk-${type}-${part} is missing from src/styles.css`);
-  }
+  for (const t of PUBLIC_TOKENS) assert.ok(read.has(t), `${t} is public but src/styles.css never reads it`);
+  for (const t of read) assert.ok(PUBLIC_TOKENS.includes(t), `src/styles.css reads ${t}, which is not in PUBLIC_TOKENS — sizes and geometry are literals, not tokens`);
 });
 
 it('every var(--uk-…) in src/styles.css has a fallback', () => {
@@ -105,6 +112,27 @@ it('import(dist/esm/index.js) exposes ReleasesDrawer, useWhatsNew and renderNote
   const esm = await import(pathToFileURL(join(dist, 'esm/index.js')).href);
   for (const name of surface) assert.equal(typeof esm[name], 'function', `the ESM build does not export ${name}`);
   assert.equal(esm.renderNotesHtml('**a**'), '<p><strong>a</strong></p>');
+});
+
+// The guard is the dev-only entry an app's own test imports (`ui-kit/guard`); it must load in both module systems and stay out of the main entry's bundle.
+it('require(dist/cjs/guard.js) exposes checkHostCss and PUBLIC_TOKENS', () => {
+  const cjs = createRequire(import.meta.url)(join(dist, 'cjs/guard.js'));
+  assert.equal(typeof cjs.checkHostCss, 'function');
+  assert.equal(cjs.PUBLIC_TOKENS.length, 22);
+  assert.deepEqual(cjs.checkHostCss('.uk-chip { color: red }').length, 1);
+});
+
+it('import(dist/esm/guard.js) exposes checkHostCss and PUBLIC_TOKENS', async () => {
+  const esm = await import(pathToFileURL(join(dist, 'esm/guard.js')).href);
+  assert.equal(typeof esm.checkHostCss, 'function');
+  assert.equal(esm.PUBLIC_TOKENS.length, 22);
+  assert.deepEqual(esm.checkHostCss(':root { --uk-ink: #111 }'), []);
+});
+
+it('the main entry does not export the guard, so nothing of it reaches an app client bundle', async () => {
+  const esm = await import(pathToFileURL(join(dist, 'esm/index.js')).href);
+  assert.equal(esm.checkHostCss, undefined);
+  assert.equal(esm.PUBLIC_TOKENS, undefined);
 });
 
 // React is a peer: the consumer's copy must be the one that renders, or hooks break across two Reacts. So dist/ reaches React only through bare `react`

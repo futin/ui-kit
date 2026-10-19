@@ -15,6 +15,7 @@
   --uk-accent: #55d0dd;
   --uk-hover-bg: rgba(255, 255, 255, .06);
   --uk-code-bg: #131a2b;
+  --uk-chip-bg: rgba(255, 255, 255, .04);
   --uk-feat-ink: #46d48c;
   --uk-feat-tint: rgba(70, 212, 140, .18);
   --uk-fix-ink: #ffb03a;
@@ -38,6 +39,7 @@
   --uk-accent: #306c0f;
   --uk-hover-bg: #f2f2f1;
   --uk-code-bg: #ededec;
+  --uk-chip-bg: rgba(0, 0, 0, .04);
   --uk-feat-ink: #38631a;
   --uk-feat-tint: #e6f0df;
   --uk-fix-ink: #8a5214;
@@ -60,6 +62,7 @@
   --uk-accent: #6fc5cf;
   --uk-hover-bg: #282b2f;
   --uk-code-bg: #191b1e;
+  --uk-chip-bg: rgba(255, 255, 255, .04);
   --uk-feat-ink: #5ac98a;
   --uk-feat-tint: rgba(90, 201, 138, .18);
   --uk-fix-ink: #e6a445;
