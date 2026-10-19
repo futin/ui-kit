@@ -78,6 +78,8 @@ it('the narrow chip carries a transparent 44px hit area that does not grow the p
   assert.deepEqual(decl('.uk-chip--narrow::before', 'width'), ['100%'], 'a pill wider than 44px keeps a hit area at least as wide as itself');
   assert.deepEqual(decl('.uk-chip--narrow::before', 'left'), ['50%'], 'centred on the pill, so a short label is not hit-tested off-centre');
   assert.deepEqual(decl('.uk-chip--narrow::before', 'position'), ['absolute']);
+  assert.deepEqual(decl('.uk-chip--narrow::before', 'top'), ['50%'], 'centred vertically on the 28px pill, so the 44px box overhangs it evenly');
+  assert.deepEqual(decl('.uk-chip--narrow::before', 'transform'), ['translate(-50%, -50%)'], 'the translate is what centres the box on both axes');
   assert.ok(!/min-height/.test(body('.uk-chip--narrow')), 'the pill itself stays 28px');
 });
 

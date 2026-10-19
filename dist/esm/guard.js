@@ -82,8 +82,9 @@ function restyle(selector, body, out) {
         .filter((i) => i.kind === 'decl')
         .map((d) => d.text.slice(0, Math.max(d.text.indexOf(':'), 0)).trim());
     const others = names.filter((n) => n && !n.startsWith('--uk-'));
+    // A grouped selector is often written one entry per line; the message is one line however the sheet is laid out.
     if (others.length)
-        out.push(`${selector} restyles a ui-kit class (${others.join(', ')}) — map --uk-* tokens instead`);
+        out.push(`${selector.replace(/\s+/g, ' ').trim()} restyles a ui-kit class (${others.join(', ')}) — map --uk-* tokens instead`);
 }
 function walk(css, inUk, out) {
     const items = split(css);
@@ -91,13 +92,14 @@ function walk(css, inUk, out) {
         if (item.kind === 'decl') {
             const colon = item.text.indexOf(':');
             const prop = colon < 0 ? '' : item.text.slice(0, colon).trim();
-            if (prop.startsWith('--uk-') && !PUBLIC_TOKENS.includes(prop))
+            if (prop.startsWith('--uk-') && !PUBLIC_TOKENS.includes(prop)) {
                 out.push(`${prop} is not a public ui-kit token — an app may only set the ${PUBLIC_TOKENS.length} listed in PUBLIC_TOKENS`);
+            }
             continue;
         }
         if (item.prelude.startsWith('@')) {
-            // @media, @supports, @layer, … hold more rules; @font-face and friends hold declarations only, which the walk reads the same way. Nested in a .uk-* rule
-            // (CSS nesting) the block's own declarations restyle that rule, so they are checked against it.
+            // @media, @supports, @layer, … hold more rules; @font-face and friends hold declarations only, which the walk reads the same way. Nested in a .uk-*
+            // rule (CSS nesting) the block's own declarations restyle that rule, so they are checked against it.
             if (inUk)
                 restyle(inUk, item.body, out);
             walk(item.body, inUk, out);

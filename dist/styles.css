@@ -10,14 +10,18 @@
 .uk-chip {
   position: relative; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px;
   font-family: var(--uk-font, system-ui, sans-serif); font-size: 12px; font-weight: 500; color: var(--uk-ink-muted, #666);
-  background: var(--uk-chip-bg, rgba(0, 0, 0, .05)); border: 1px solid var(--uk-hairline, #e5e5e5); border-radius: 999px; cursor: pointer; transition: color .15s;
+  background: var(--uk-chip-bg, rgba(0, 0, 0, .05)); border: 1px solid var(--uk-hairline, #e5e5e5); border-radius: 999px; cursor: pointer;
+  transition: color .15s;
 }
 .uk-chip:hover { color: var(--uk-ink, #222) }
 .uk-chip-dot { flex: none; width: 7px; height: 7px; border-radius: 999px; background: var(--uk-accent, #2563eb) }
-/* The phone shape: the visible pill stays 28px, and a transparent box at least 44x44, centred on it, is the thing a thumb lands on. It is a pseudo-element so
-   the pill does not grow and nothing else moves. `width: 100%` makes it as wide as the pill, so a long label keeps a hit area at least as wide as itself;
-   `min-width` covers a short one. It is centred with `left: 50%` and a translate, because `left: 0; right: 0` plus a min-width would pin it to the left edge. */
-.uk-chip--narrow::before { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 100%; min-width: 44px; min-height: 44px }
+/* The phone shape: the visible pill stays 28px, and a transparent box at least 44x44, centred on it, is the thing a thumb lands on. It is a pseudo-element
+   so the pill does not grow and nothing else moves. `width: 100%` makes it as wide as the pill, so a long label keeps a hit area at least as wide as
+   itself; `min-width` covers a short one. It is centred with `left: 50%` and a translate, because `left: 0; right: 0` plus a min-width would pin it to the
+   left edge. */
+.uk-chip--narrow::before {
+  content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 100%; min-width: 44px; min-height: 44px;
+}
 
 /* ── Drawer ────────────────────────────────────────────────────────────────────
    The scrim over everything, and a panel flush with the window's right edge, full height, scrolling on its own. `uk-drawer--narrow` is the whole screen.

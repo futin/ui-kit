@@ -16,6 +16,13 @@
   },
   "main": "./dist/cjs/index.js",
   "types": "./dist/esm/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "guard": [
+        "./dist/esm/guard.d.ts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/esm/index.d.ts",

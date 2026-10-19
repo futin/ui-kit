@@ -79,6 +79,12 @@ describe('checkHostCss', () => {
     assert.equal(checkHostCss('.uk-chip { @media print { color: red } }').length, 1);
   });
 
+  it('reports a multi-line grouped selector on one line, whitespace collapsed', () => {
+    const [message] = checkHostCss('.rail .uk-chip,\n  .rail .uk-chip-dot\n{ color: red }');
+    assert.ok(!/[\r\n]/.test(message), JSON.stringify(message));
+    assert.ok(message.startsWith('.rail .uk-chip, .rail .uk-chip-dot restyles'), JSON.stringify(message));
+  });
+
   it('returns [] for an empty sheet', () => {
     assert.deepEqual([], checkHostCss(''));
   });

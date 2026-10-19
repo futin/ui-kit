@@ -27,6 +27,15 @@ it('package.json points its entry points into dist/', () => {
   assert.deepEqual(pkg.files, ['dist']);
 });
 
+// TypeScript's node10 resolution (`moduleResolution: "node"`, which guide-manager and backlog-manager still use) ignores `exports`, so `ui-kit/guard` would be a
+// TS2307 there; `typesVersions` is the field node10 does read. Bundler and node16 resolution keep using `exports`.
+it('typesVersions maps ui-kit/guard to a declaration file that exists in dist/, for node10 resolution', () => {
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  assert.deepEqual(pkg.typesVersions, { '*': { guard: ['./dist/esm/guard.d.ts'] } });
+  assert.equal(pkg.typesVersions['*'].guard[0], pkg.exports['./guard'].types, 'the two routes to the guard types must agree');
+  assert.ok(existsSync(join(root, pkg.typesVersions['*'].guard[0])), 'the mapped declaration file is missing from dist/');
+});
+
 it('no file under dist/ imports or requires a stylesheet', () => {
   const css = /\bimport\s*(?:[^'"]*?\bfrom\s*)?['"][^'"]+\.css['"]|\brequire\(\s*['"][^'"]+\.css['"]\s*\)/;
   assert.ok(css.test(`import './a.css';`) && css.test(`import x from "b.css"`) && css.test(`require('c.css')`), 'the pattern itself must match');
