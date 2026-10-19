@@ -5,12 +5,17 @@ import { fileURLToPath } from 'node:url';
 import type { ReleasesResponse as ReleaseKitResponse } from 'release-kit';
 import type { ReleasesResponse } from '../src/types.js';
 import * as fixtures from '../fixtures/releases.js';
+import type { VersionChipProps } from '../src/releases/VersionChip.js';
 
 // ui-kit owns its wire types and takes release-kit only as a devDependency (spec D19), so the two can drift apart silently. These declarations are the
 // contract: tsc refuses this file the moment release-kit's ReleasesResponse stops fitting ui-kit's, or a fixture stops fitting either.
 // Functions, not top-level values: the contract is checked by tsc and must cost nothing when tsx runs this file.
 export const accepts = (fromReleaseKit: ReleaseKitResponse): ReleasesResponse => fromReleaseKit;
 export const fixturesFit = (): Record<keyof typeof fixtures, ReleasesResponse> => fixtures;
+
+// Apps map tokens and nothing else, so the chip takes no `className`: tsc refuses this file the moment the key comes back. `narrow` is the one placement prop.
+export const chipHasNoClassName: 'className' extends keyof VersionChipProps ? never : true = true;
+export const chipTakesNarrow: 'narrow' extends keyof VersionChipProps ? true : never = true;
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 

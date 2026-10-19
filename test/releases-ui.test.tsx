@@ -56,9 +56,17 @@ describe('VersionChip', () => {
     assert.equal(m.all('.uk-chip-dot').length, 1);
   });
 
-  it('appends the host className', () => {
-    const m = mount(<VersionChip label="v0.3.0" dot={false} onClick={() => {}} className="rail-version" />);
-    assert.equal(m.q('button').className, 'uk-chip rail-version');
+  it('narrow adds uk-chip--narrow to the same button, with no wrapper or inner span for it', () => {
+    const m = mount(<VersionChip label="v0.3.0" dot={false} onClick={() => {}} narrow />);
+    assert.equal(m.q('button').className, 'uk-chip uk-chip--narrow');
+    assert.equal(m.all('button > span').length, 1, 'only the label span: the hit area is a pseudo-element');
+  });
+
+  it('without narrow the class is exactly uk-chip', () => {
+    const m = mount(<VersionChip label="v0.3.0" dot={false} onClick={() => {}} />);
+    assert.equal(m.q('button').className, 'uk-chip');
+    const off = mount(<VersionChip label="v0.3.0" dot={false} onClick={() => {}} narrow={false} />);
+    assert.equal(off.q('button').className, 'uk-chip');
   });
 });
 

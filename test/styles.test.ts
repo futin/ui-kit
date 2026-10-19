@@ -74,6 +74,9 @@ it('the baseline row draws a hairline rule on each side of its label', () => {
 
 it('the narrow chip carries a transparent 44px hit area that does not grow the pill', () => {
   assert.deepEqual(decl('.uk-chip--narrow::before', 'min-height'), ['44px']);
+  assert.deepEqual(decl('.uk-chip--narrow::before', 'min-width'), ['44px']);
+  assert.deepEqual(decl('.uk-chip--narrow::before', 'width'), ['100%'], 'a pill wider than 44px keeps a hit area at least as wide as itself');
+  assert.deepEqual(decl('.uk-chip--narrow::before', 'left'), ['50%'], 'centred on the pill, so a short label is not hit-tested off-centre');
   assert.deepEqual(decl('.uk-chip--narrow::before', 'position'), ['absolute']);
   assert.ok(!/min-height/.test(body('.uk-chip--narrow')), 'the pill itself stays 28px');
 });
