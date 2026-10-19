@@ -77,10 +77,12 @@ No dependency — a small hand splitter (the spec allows it).
   - `.rail-version-slot { margin-top: auto }` → `[]`
   - `/* .uk-chip { color: red } */ .a { color: red }` → `[]`
   - `.duck-chip { color: red }` → `[]` (no false hit on a class merely containing `uk-`)
+  - `.uk-drawer.uk-drawer--narrow { padding: 0 }` → 1 message (chained classes)
   - `PUBLIC_TOKENS` has 22 entries and contains `--uk-chip-bg` and `--uk-zoom`, not `--uk-radius`.
 - [ ] **Step 2: Run** `node --import tsx --test test/guard.test.ts` — FAIL (module missing).
 - [ ] **Step 3: Implement** `src/guard.ts`; add `"./guard": { types, import, require }` pointing at `dist/{esm,cjs}/guard.*`; extend the packaging test's
-  entry-point list with `esm/guard.js`, `cjs/guard.js`, `esm/guard.d.ts` and the `./guard` export; README §Consuming gets a three-line "add the guard"
+  entry-point list with `esm/guard.js`, `cjs/guard.js`, `esm/guard.d.ts` and the `./guard` export, plus a `require`/`import` pair loading the guard
+  entry in the style of the existing index load tests; README §Consuming gets a three-line "add the guard"
   recipe (read your sheets, `expect(checkHostCss(css)).toEqual([])`).
 - [ ] **Step 4: Run** `npm run build && npm test` — PASS.
 - [ ] **Step 5: Commit** `feat(guard): checkHostCss for host stylesheets`.
@@ -99,7 +101,7 @@ Values (D2, lifted from backlog-manager): chip `inline-flex`, gap 6px, min-heigh
 `--uk-ink-muted` → hover `--uk-ink`, background `--uk-chip-bg` (default `rgba(0, 0, 0, .05)`), border `1px solid --uk-hairline` (constant on hover — no
 new token). Drawer: width `min(400px, calc(100vw / var(--uk-zoom, 1)))`; height `calc(100vh / …)` then `calc(100dvh / …)`; `border-left: 1px solid
 --uk-hairline`; shadow `-24px 0 64px --uk-shadow`; narrow: width `calc(100vw / …)`, no border, no shadow, padding `20px 16px`. Heading 19px. Notes 13px;
-`h3` 13/600/`--uk-ink`, margin `10px 0 4px`; first child of `.uk-releases-notes` (direct, and through one wrapper div — D8 still wraps the HTML in a div)
+`h3` 13/600/`--uk-ink`, margin `10px 0 4px`; `.uk-releases-notes > div > :first-child` (Task 5's markup; the one selector)
 has `margin-top: 0`; `em`/`strong` inherit colour. Badges weight 500. Baseline: gap 10px, `::before`/`::after` hairline rules (`flex: 1`, 1px,
 `--uk-hairline`), date not pushed right. Narrow chip (D3): visible pill unchanged, hit area ≥ 44px tall — your call between an inner span carrying the
 pill or a transparent `::before`; Task 3 picks the markup to match.
@@ -116,7 +118,8 @@ pill or a transparent `::before`; Task 3 picks the markup to match.
   - `checkHostCss` over `playground/themes.css` → `[]` (the playground is a host too).
 - [ ] **Step 2: Run** `node --import tsx --test test/packaging.test.ts test/styles.test.ts` — FAIL.
 - [ ] **Step 3: Rewrite the sheet's rules** to the values above; README §Tokens table loses the six removed rows and gains `--uk-chip-bg` (default and
-  use) and `--uk-zoom` (`1`, "divides the drawer's viewport units; map it to your shell's zoom"); §Rules gains *"Hosts map tokens and nothing else:
+  use) and `--uk-zoom` (`1`, "divides the drawer's viewport units; map it to your shell's zoom"), and its layout-classes sentence is joined by sizes;
+  `src/styles.css`'s header comment drops the "placed through the chip's className" line; §Rules gains *"Hosts map tokens and nothing else:
   every `.uk-*` rule lives in this sheet, enforced by `ui-kit/guard`."* Playground maps gain `--uk-chip-bg` per theme.
 - [ ] **Step 4: Run** `npm run build && npm test` — PASS. Open the playground (`npm run dev`) and eyeball all three columns: pill, drawer, baseline rules.
 - [ ] **Step 5: Commit** `feat(styles)!: one look for the chip and drawer`.
@@ -161,14 +164,15 @@ pill or a transparent `::before`; Task 3 picks the markup to match.
 
 ### Task 5: Panel and drawer — `sanitize` replaces `renderNotes`
 
-**Files:** Modify `src/releases/ReleasesPanel.tsx`, `src/releases/ReleasesDrawer.tsx`, `fixtures/releases.ts`, `playground/main.tsx`; Test
-`test/releases-ui.test.tsx`
+**Files:** Create `fixtures/notes.ts`. Modify `src/releases/ReleasesPanel.tsx`, `src/releases/ReleasesDrawer.tsx`, `playground/main.tsx`; Test
+`test/releases-ui.test.tsx`. Not `fixtures/releases.ts`: every export there must be a `ReleasesResponse` (`test/type-contract.test.ts:13`,
+`playground/main.tsx:20` renders each one), so a bare string there breaks typecheck.
 
 **Interfaces:**
 - Consumes: `renderNotesHtml` (Task 4).
 - Produces: `ReleasesPanelProps = { data: ReleasesResponse; sanitize?: (html: string) => string }`; `ReleasesDrawerProps` = that plus the drawer's
   `onClose | closeOnEscape | narrow | restoreFocus`. Notes render as `sanitize ? sanitize(renderNotesHtml(n)) : renderNotesHtml(n)` inside
-  `.uk-releases-notes > div`. `fixtures/releases.ts` exports `NOTES_ALL_CONSTRUCTS: string` (one `###`, a list, a paragraph with code, bold, em and an
+  `.uk-releases-notes > div`. `fixtures/notes.ts` exports `NOTES_ALL_CONSTRUCTS: string` (one `###`, a list, a paragraph with code, bold, em and an
   https link).
 
 - [ ] **Step 1: Tests.** Delete `replaces the default with a custom renderNotes` and `passes renderNotes through to the panel`. Add: `sanitize receives
@@ -176,7 +180,8 @@ pill or a transparent `::before`; Task 3 picks the markup to match.
   DOM shows `clean`); `the drawer passes sanitize through`; `renderNotes is not a key of ReleasesPanelProps` (type-level); `NOTES_ALL_CONSTRUCTS renders
   an h3, a ul, a code, a strong, an em and an a`.
 - [ ] **Step 2: Run** `node --import tsx --test test/releases-ui.test.tsx` — FAIL.
-- [ ] **Step 3: Implement**; the playground's drawer shows `NOTES_ALL_CONSTRUCTS`.
+- [ ] **Step 3: Implement**; the playground's drawer shows `NOTES_ALL_CONSTRUCTS` (imported separately, wrapped in a one-release `ReleasesResponse`
+  there — not added to the `fixtures` loop).
 - [ ] **Step 4: Run** `npm run build && npm run typecheck && npm test` — PASS.
 - [ ] **Step 5: Commit** `feat(panel)!: sanitize replaces renderNotes`.
 
@@ -212,13 +217,16 @@ light and one dark theme. Drawer fits the screen; the pill matches the other two
 `client/src/components/SideRail.tsx`, `client/src/components/ReleasesDrawer.tsx`, `client/src/styles.css` (`.rail-version` → layout-only wrapper rule
 `.rail-version-slot`; delete `.uk-drawer {…}`), `shared/theme.css` (add `--uk-chip-bg: var(--steel)`, `--uk-zoom: var(--font-scale, 1)`; rewrite the
 comment at ~168–169 — the chip is `--uk-ink-muted` = `--ink2` now), `test/releases-ui.test.tsx` (selectors → the inner `.uk-chip` button),
-`test/phone-css.test.ts:56` (assert the phone menu renders `.uk-chip--narrow`, drop the CSS 44px for `.rail-version`), `CLAUDE.md` (the ui-kit
+`test/phone-css.test.ts:56` (text-only CSS suite, no jsdom: drop the `.rail-version` 44px assertion and nothing else; the narrow render is
+asserted in `test/releases-ui.test.tsx`, Step 1), `CLAUDE.md` (the ui-kit
 invariant: tokens only, guarded by `test/ui-kit-guard.test.ts`; drop the `.uk-drawer` height sentence).
 
 **Interfaces:** Consumes `checkHostCss`, `VersionChip.narrow`, `ReleasesDrawer.sanitize` (Tasks 1, 3, 5).
 
 - [ ] **Step 1:** Write `test/ui-kit-guard.test.ts` (sheets: `client/src/styles.css`, `shared/theme.css`) and a Review-Focus-5 case in
-  `test/releases-ui.test.tsx`: `NOTES_ALL_CONSTRUCTS` through the drawer with the app's `sanitizeSnapshot` keeps `h3 ul code strong em a`.
+  `test/releases-ui.test.tsx`: an inline notes sample with the same constructs as ui-kit's `NOTES_ALL_CONSTRUCTS` (ui-kit's `fixtures/` do not ship —
+  `files` is `dist` only), rendered through the drawer with the app's `sanitizeSnapshot`, keeps `h3 ul code strong em a`. In the same file's
+  under-640 case (it already stubs `matchMedia` for `(max-width: 639px)`), assert the phone menu's chip carries `uk-chip--narrow`.
 - [ ] **Step 2:** `pnpm exec jest test/ui-kit-guard.test.ts` — FAIL naming `.uk-drawer`.
 - [ ] **Step 3:** Clean up as listed; `narrow` comes from ui-kit's `useMediaQuery(PHONE)`, read by both `SideRail` and `ReleasesDrawer` (replacing the
   private `NARROW`, including inside `restoreTarget`'s `matchMedia` call); `sanitize={sanitizeSnapshot}` replaces the `renderNotes` wrapper and the
@@ -229,12 +237,14 @@ invariant: tokens only, guarded by `test/ui-kit-guard.test.ts`; drop the `.uk-dr
 
 ### Task 8: backlog-manager
 
-**Files:** Create `test/ui-kit-guard.test.ts`. Modify `client/src/components/SideRail.tsx` (wrap; `narrow={useNarrow()}`),
+**Files:** Create `test/ui-kit-guard.test.ts`. Modify `client/src/components/SideRail.tsx` (wrap; `narrow={narrow}` — the `useNarrow()` it already holds),
 `client/src/components/ReleasesDrawer.tsx` (drop `renderNotes`), `client/src/styles.css` (`.rail-release` keeps placement only, on the wrapper; delete
 ~2747–2770's `.uk-*` block and its comment; drop `--uk-font-size-lg`; add `--uk-chip-bg: var(--steel)`, `--uk-zoom: var(--font-scale, 1)`),
-`test/rail.test.tsx:362` (the wrapper is the nav's last child and contains the chip), `test/ui-kit-tokens.test.ts` (prune `KIT_DEFAULT` of the removed
-tokens), `test/releases-drawer.test.tsx:40-46,101` (the `###`-as-text comment and assertion now hold for ui-kit's renderer — rewrite to assert an `h3`),
-`.claude/DESIGN.md` §8.7/§8.10 (point at ui-kit instead of restating values), `docs/subsystems/releases.md:73`.
+`test/rail.test.tsx:364` and `:387` (both `nav.lastElementChild` assertions: the wrapper is the nav's last child and contains the chip), `test/ui-kit-tokens.test.ts` (all of `KIT_DEFAULT` is removed
+tokens, so its read-but-unmapped test goes; fix its `:23` comment), `test/releases-drawer.test.tsx:40-46,101` (the `###`-as-text comment and assertion now hold for ui-kit's renderer — rewrite to assert an `h3`),
+`.claude/DESIGN.md` §8.7/§8.10 (point at ui-kit instead of restating values), `docs/subsystems/releases.md:73`, `CLAUDE.md` +
+`docs/subsystems/invariants.md` (spec: one invariant line pointing at the guard — in CLAUDE.md a headline-only bullet linking a new
+`invariants.md#…` anchor, the shape `test/claude-rules.test.ts`'s `HEADLINE_ONLY` enforces; the body goes in `invariants.md`).
 
 - [ ] **Step 1:** Guard test (sheets: every `.css` under `client/src` and `shared/`).
 - [ ] **Step 2:** `pnpm exec jest test/ui-kit-guard.test.ts` — FAIL naming `.uk-drawer`, `.uk-releases-notes`, `--uk-font-size-lg`.
@@ -246,16 +256,18 @@ tokens), `test/releases-drawer.test.tsx:40-46,101` (the `###`-as-text comment an
 
 ### Task 9: claude-agents-dashboard
 
-**Files:** Create `test/ui-kit-guard.test.ts` (in the repo's `t(...)` style, registered with `test/run-all.ts` if that file lists suites). Modify
-`client/src/components/SideRail.tsx` (wrap; `.rel-chip` moves to the wrapper, placement only; `narrow={useNarrow()}`),
+**Files:** Create `test/ui-kit-guard.test.ts` (in the repo's `t(...)` style, exporting `run(): number` like every suite, imported and called from
+`test/run-all.ts` — suites have no self-run entry). Modify
+`client/src/components/SideRail.tsx` (wrap; `.rel-chip` moves to the wrapper, placement only; import `useNarrow` from `../hooks/useNarrow` and pass it),
 `client/src/components/ReleasesDrawer.tsx` (drop `renderNotes`), `client/src/styles.css` (`.rel-chip` placement only, `.foot+.rel-chip` kept; delete
 `.uk-releases-notes .md`; in the `.uk-chip,.uk-drawer-scrim` mapping drop `--uk-font-size-lg`, add `--uk-chip-bg:var(--steel)` and
-`--uk-zoom:var(--font-scale,1)` — and check `.uk-drawer` sits under `.uk-drawer-scrim` so it inherits them), `test/releases-client.test.ts:91,95-100`
+`--uk-zoom:var(--font-scale,1)` — `.uk-drawer` renders inside `.uk-drawer-scrim`, so it inherits them), `test/releases-client.test.ts:92,95-100`
 (assert the wrapper and `narrow`, no `renderNotes`), `test/visual/views.spec.ts:88` (click the chip inside `.rel-chip`; re-record the `releases`
-baselines), `docs/subsystems/releases.md:39`, `client/src/main.tsx:11` comment.
+baselines), `docs/subsystems/releases.md:39`, `client/src/main.tsx:11` comment, `.claude/CLAUDE.md` §Code rules (spec: one line pointing at the guard; this repo
+has no Invariants section).
 
 - [ ] **Step 1:** Guard test (sheets: every `.css` under `client/src`).
-- [ ] **Step 2:** `pnpm exec tsx test/ui-kit-guard.test.ts` (or the runner's single-file form) — FAIL naming `.uk-releases-notes .md` and
+- [ ] **Step 2:** `pnpm exec tsx test/run-all.ts` with the new suite registered (the only way a suite runs here) — the guard suite FAILs naming `.uk-releases-notes .md` and
   `--uk-font-size-lg`.
 - [ ] **Step 3:** Clean up as listed.
 - [ ] **Step 4:** `pnpm run typecheck` and the guard + `releases-client` suites — PASS; visual suite for `releases` re-recorded. Manual check.
