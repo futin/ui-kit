@@ -39,7 +39,7 @@
     "jsdom": "30.1.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "release-kit": "github:futin/release-kit#v1.2.0",
+    "release-kit": "github:futin/release-kit#v1.3.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vite": "8.3.4"
