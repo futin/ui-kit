@@ -5,9 +5,12 @@ import { act } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { baselineOnly, hostileNotes, mixed, noCurrent } from '../fixtures/releases.js';
+import { NOTES_ALL_CONSTRUCTS } from '../fixtures/notes.js';
 import { formatReleaseDate } from '../src/releases/logic.js';
+import { renderNotesHtml } from '../src/releases/notes.js';
 import { ReleasesDrawer } from '../src/releases/ReleasesDrawer.js';
 import { ReleasesPanel } from '../src/releases/ReleasesPanel.js';
+import type { ReleasesPanelProps } from '../src/releases/ReleasesPanel.js';
 import { VersionChip } from '../src/releases/VersionChip.js';
 import type { ReleasesResponse } from '../src/types.js';
 import { useMediaQuery } from '../src/ui/useMediaQuery.js';
@@ -156,15 +159,33 @@ describe('ReleasesPanel', () => {
     assert.equal(notes.querySelectorAll('li').length, 3);
   });
 
-  it('replaces the default with a custom renderNotes', () => {
-    const renderNotes = mock.fn((notes: string) => <em className="custom">{notes.length}</em>);
-    const m = mount(<ReleasesPanel data={mixed} renderNotes={renderNotes} />);
-    // One call per release with notes; the baseline's are empty and never reach the renderer.
-    assert.equal(renderNotes.mock.callCount(), 3);
-    const notes = entry(m, '0.2.1').querySelector('.uk-releases-notes');
+  it("sanitize receives renderNotesHtml's output and its return is what renders", () => {
+    const sanitize = mock.fn((_html: string) => '<p>clean</p>');
+    const m = mount(<ReleasesPanel data={mixed} sanitize={sanitize} />);
+    // One call per release with notes; the baseline's are empty and never reach the hook.
+    assert.equal(sanitize.mock.callCount(), 3);
+    assert.equal(sanitize.mock.calls[0].arguments[0], renderNotesHtml(mixed.releases[0].notes));
+    const notes = entry(m, '0.3.0').querySelector('.uk-releases-notes');
     assert.ok(notes);
-    assert.equal(notes.innerHTML, `<em class="custom">${mixed.releases[1].notes.length}</em>`);
+    // The sanitised HTML sits directly on .uk-releases-notes: no wrapper element between it and the entry.
+    assert.equal(notes.innerHTML, '<p>clean</p>');
     assert.equal(entry(m, '0.3.0').querySelectorAll('li').length, 0);
+  });
+
+  it('renderNotes is not a key of ReleasesPanelProps', () => {
+    const absent: 'renderNotes' extends keyof ReleasesPanelProps ? never : true = true;
+    assert.equal(absent, true);
+  });
+
+  it('NOTES_ALL_CONSTRUCTS renders an h3, a ul, a code, a strong, an em and an a', () => {
+    const data: ReleasesResponse = {
+      current: null,
+      releases: [{ version: '1.0.0', date: '2026-10-19T10:00:00Z', title: 'All constructs', type: 'feat', breaking: false, notes: NOTES_ALL_CONSTRUCTS }],
+    };
+    const m = mount(<ReleasesPanel data={data} />);
+    const notes = m.q('.uk-releases-notes');
+    for (const tag of ['h3', 'ul', 'code', 'strong', 'em', 'a']) assert.ok(notes.querySelector(tag), `${tag} is not rendered`);
+    assert.match(notes.querySelector('a')?.getAttribute('href') ?? '', /^https:\/\//);
   });
 
   it('keeps hostile notes inert through the default renderer', () => {
@@ -185,8 +206,8 @@ describe('ReleasesDrawer', () => {
     assert.equal(panel.querySelectorAll('[data-testid^="release-"]').length, 4);
   });
 
-  it('passes renderNotes through to the panel', () => {
-    const m = mount(<ReleasesDrawer data={mixed} onClose={() => {}} renderNotes={() => <i className="mine" />} />);
+  it('the drawer passes sanitize through', () => {
+    const m = mount(<ReleasesDrawer data={mixed} onClose={() => {}} sanitize={() => '<i class="mine"></i>'} />);
     assert.equal(m.all('.uk-releases-notes .mine').length, 3);
   });
 

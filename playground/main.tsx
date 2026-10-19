@@ -8,6 +8,7 @@ import './themes.css';
 import { chipLabel, ReleasesDrawer, ReleasesPanel, useMediaQuery, VersionChip } from '../src/index.js';
 import type { ReleasesResponse } from '../src/index.js';
 import * as fixtures from '../fixtures/releases.js';
+import { NOTES_ALL_CONSTRUCTS } from '../fixtures/notes.js';
 
 const THEMES = [
   { id: 'guide-manager', label: 'guide-manager (midnight)' },
@@ -16,6 +17,13 @@ const THEMES = [
 ] as const;
 
 type Theme = (typeof THEMES)[number]['id'];
+
+// Every construct the notes renderer emits, in one release. Not in `fixtures/releases.ts`: that file holds only ReleasesResponse values and the loop below
+// renders each of them as a chip and a panel.
+const ALL_CONSTRUCTS: ReleasesResponse = {
+  current: { version: '1.0.0', ahead: 0 },
+  releases: [{ version: '1.0.0', date: '2026-10-19T10:00:00Z', title: 'Every notes construct', type: 'feat', breaking: false, notes: NOTES_ALL_CONSTRUCTS }],
+};
 
 const FIXTURES = Object.entries(fixtures) as [string, ReleasesResponse][];
 
@@ -56,7 +64,7 @@ function App() {
               <Fixture key={name} name={name} data={data} />
             ))}
             {/* Rendered inside the theme's wrapper, so the drawer inherits that theme's tokens as it would inside the app. */}
-            {open === t.id && <ReleasesDrawer data={fixtures.mixed} narrow={narrow} onClose={() => setOpen(null)} />}
+            {open === t.id && <ReleasesDrawer data={ALL_CONSTRUCTS} narrow={narrow} onClose={() => setOpen(null)} />}
           </div>
         ))}
       </main>

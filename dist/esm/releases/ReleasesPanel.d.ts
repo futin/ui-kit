@@ -1,11 +1,10 @@
-import type { ReactNode } from 'react';
 import type { ReleasesResponse } from '../types.js';
 export type ReleasesPanelProps = {
     data: ReleasesResponse;
     /**
-     * The host's own notes renderer (spec D14). Its output goes inside `.uk-releases-notes`; a host whose renderer returns an HTML string wraps it in its
-     * own `dangerouslySetInnerHTML` element. Default: `renderNotesHtml`, escape-first, safe with no sanitiser behind it.
+     * The host's own sanitising pass, run over `renderNotesHtml`'s output before it is set as HTML. Notes always render through ui-kit's one renderer so
+     * every app's drawer reads the same; a host whose policy needs more (guide-manager's second sanitising wall) adds it here and cannot replace the markup.
      */
-    renderNotes?: (notes: string) => ReactNode;
+    sanitize?: (html: string) => string;
 };
-export declare function ReleasesPanel({ data, renderNotes }: ReleasesPanelProps): import("react").JSX.Element;
+export declare function ReleasesPanel({ data, sanitize }: ReleasesPanelProps): import("react").JSX.Element;
