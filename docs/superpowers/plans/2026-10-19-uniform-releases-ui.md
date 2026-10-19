@@ -220,8 +220,9 @@ invariant: tokens only, guarded by `test/ui-kit-guard.test.ts`; drop the `.uk-dr
 - [ ] **Step 1:** Write `test/ui-kit-guard.test.ts` (sheets: `client/src/styles.css`, `shared/theme.css`) and a Review-Focus-5 case in
   `test/releases-ui.test.tsx`: `NOTES_ALL_CONSTRUCTS` through the drawer with the app's `sanitizeSnapshot` keeps `h3 ul code strong em a`.
 - [ ] **Step 2:** `pnpm exec jest test/ui-kit-guard.test.ts` — FAIL naming `.uk-drawer`.
-- [ ] **Step 3:** Clean up as listed; `narrow` comes from `useMediaQuery(PHONE)`, read by both `SideRail` and `ReleasesDrawer` (replacing the private
-  `NARROW`); `sanitize={sanitizeSnapshot}`.
+- [ ] **Step 3:** Clean up as listed; `narrow` comes from ui-kit's `useMediaQuery(PHONE)`, read by both `SideRail` and `ReleasesDrawer` (replacing the
+  private `NARROW`, including inside `restoreTarget`'s `matchMedia` call); `sanitize={sanitizeSnapshot}` replaces the `renderNotes` wrapper and the
+  `renderNotesHtml` import goes.
 - [ ] **Step 4:** `pnpm run typecheck && pnpm exec jest test/ui-kit-guard.test.ts test/releases-ui.test.tsx test/phone-css.test.ts
   test/theme-tokens.test.ts` — PASS. Manual check.
 - [ ] **Step 5:** Commit `fix(releases): one look for the version chip and What's new drawer`; ask the user before pushing.
