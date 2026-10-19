@@ -51,6 +51,20 @@ it('.uk-drawer--narrow is the whole screen with no border and no shadow', () => 
   assert.match(decl('.uk-drawer--narrow', 'width')[0] ?? '', /var\(--uk-zoom, 1\)/);
 });
 
+// A host page with `viewport-fit=cover` (an iPhone PWA) draws under the notch and the home indicator; the full-screen drawer keeps its own spacing on top
+// of each edge's inset, and env() falls back to 0 where a browser has no insets, so every other layout is unchanged.
+it('.uk-drawer--narrow adds each safe-area inset to its own padding on that edge', () => {
+  const sides = { top: '20px', right: '16px', bottom: '20px', left: '16px' } as const;
+  for (const [side, base] of Object.entries(sides)) {
+    assert.deepEqual(decl('.uk-drawer--narrow', `padding-${side}`), [`calc(${base} + env(safe-area-inset-${side}, 0px))`], side);
+  }
+});
+
+it('.uk-drawer-close keeps clear of the notch on the top and right edges', () => {
+  assert.deepEqual(decl('.uk-drawer-close', 'top'), ['calc(16px + env(safe-area-inset-top, 0px))']);
+  assert.deepEqual(decl('.uk-drawer-close', 'right'), ['calc(16px + env(safe-area-inset-right, 0px))']);
+});
+
 it('.uk-releases-notes h3 is 13px, 600', () => {
   assert.deepEqual(decl('.uk-releases-notes h3', 'font-size'), ['13px']);
   assert.deepEqual(decl('.uk-releases-notes h3', 'font-weight'), ['600']);

@@ -36,9 +36,13 @@
   color: var(--uk-ink, #222); background: var(--uk-panel-bg, #fff); border-left: 1px solid var(--uk-hairline, #e5e5e5);
   box-shadow: -24px 0 64px var(--uk-shadow, rgba(0, 0, 0, .15));
 }
-.uk-drawer--narrow { width: calc(100vw / var(--uk-zoom, 1)); padding: 20px 16px; border-left: 0; box-shadow: none }
+/* Full screen reaches under the notch and the home indicator on a `viewport-fit=cover` page, so each edge adds its safe-area inset (0 elsewhere). */
+.uk-drawer--narrow {
+  width: calc(100vw / var(--uk-zoom, 1)); padding-top: calc(20px + env(safe-area-inset-top, 0px)); padding-right: calc(16px + env(safe-area-inset-right, 0px));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); padding-left: calc(16px + env(safe-area-inset-left, 0px)); border-left: 0; box-shadow: none;
+}
 .uk-drawer-close {
-  position: absolute; top: 16px; right: 16px; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+  position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
   font-family: inherit; font-size: 14px; color: var(--uk-ink-muted, #666);
   background: none; border: 0; border-radius: 12px; cursor: pointer;
 }
