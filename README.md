@@ -116,8 +116,10 @@ The playground is never built into `dist/` and never shipped.
 
 ## Releases
 
-CI and releases run through release-kit's reusable workflows (`.github/workflows/ci.yml`, `.github/workflows/release.yml`); the PR title decides the
-version bump, and the PR's `## What's new` section is the release note. After each release the `bump` job opens a `chore(deps): bump ui-kit to vX.Y.Z` PR in
+CI and releases run through release-kit's reusable workflows (`.github/workflows/ci.yml`, `.github/workflows/release.yml`). Releases are nightly rollups
+(03:00 UTC, or on `workflow_dispatch`): one version for every `feat`/`fix`/`perf` PR merged since the last tag, bumped by the largest PR title type among
+them. The PR's `## What's new` section is its release note, and `ci / pr-title` fails a `feat`/`fix`/`perf` PR while it is empty (`None` opts out). After
+each release run the `bump` job opens a `chore(deps): bump ui-kit to vX.Y.Z` PR in
 every consumer that is behind, using the `BUMP_TOKEN` secret.
 
 ## Storybook
