@@ -80,6 +80,9 @@
 }
 .uk-releases-notes a, .uk-releases-pr { color: var(--uk-accent, #2563eb) }
 .uk-releases-pr { display: inline-block; margin-top: 8px; font-size: 12px }
+.uk-releases-group { margin-top: 12px }
+.uk-releases-scope { font-size: 12px; font-weight: 600; color: var(--uk-ink-muted, #666) }
+.uk-releases-item { margin-top: 6px }
 /* The baseline: where numbering starts, not something that shipped — muted, a divider with its words in the gap. A hairline rule runs out each side of the
    label and date (`flex: 1`), so the date sits next to the label instead of being pushed to the edge like a release row's. */
 .uk-releases-base { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--uk-ink-muted, #666) }

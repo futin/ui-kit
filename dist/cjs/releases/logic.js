@@ -72,12 +72,24 @@ function formatReleaseDate(iso) {
         return iso;
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+// `items` is optional on the wire (an older server omits it) but never half-shaped: when present it is an array of objects with a numeric `pr`, which is the
+// one field the grouped drawer cannot render without. The rest of an item is trusted as the release fields already are.
+function hasValidItems(release) {
+    if (typeof release !== 'object' || release === null)
+        return true;
+    const items = release.items;
+    if (items === undefined)
+        return true;
+    return Array.isArray(items) && items.every((i) => typeof i === 'object' && i !== null && typeof i.pr === 'number');
+}
 /** The response guard: an HTML error page or a half-shaped body is rejected, so the caller keeps its last good answer. */
 function isReleasesResponse(v) {
     if (typeof v !== 'object' || v === null)
         return false;
     const r = v;
     if (!Array.isArray(r.releases))
+        return false;
+    if (!r.releases.every(hasValidItems))
         return false;
     if (r.current === null)
         return true;

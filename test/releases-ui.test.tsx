@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { act } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { baselineOnly, hostileNotes, mixed, noCurrent } from '../fixtures/releases.js';
+import { baselineOnly, hostileNotes, mixed, noCurrent, rollup } from '../fixtures/releases.js';
 import { NOTES_ALL_CONSTRUCTS } from '../fixtures/notes.js';
 import { formatReleaseDate } from '../src/releases/logic.js';
 import { renderNotesHtml } from '../src/releases/notes.js';
@@ -12,7 +12,7 @@ import { ReleasesDrawer } from '../src/releases/ReleasesDrawer.js';
 import { ReleasesPanel } from '../src/releases/ReleasesPanel.js';
 import type { ReleasesPanelProps } from '../src/releases/ReleasesPanel.js';
 import { VersionChip } from '../src/releases/VersionChip.js';
-import type { ReleasesResponse } from '../src/types.js';
+import type { Release, ReleaseItem, ReleasesResponse } from '../src/types.js';
 import { useMediaQuery } from '../src/ui/useMediaQuery.js';
 import { renderHook } from './dom.js';
 
@@ -116,7 +116,7 @@ describe('ReleasesPanel', () => {
     const r = mixed.releases[2];
     const data: ReleasesResponse = {
       current: null,
-      releases: [r, { ...r, version: '0.1.9', url: undefined }, { ...r, version: '0.1.8', pr: undefined }],
+      releases: [r, { ...r, version: '0.1.9', url: undefined }, { ...r, version: '0.1.8', pr: undefined, items: undefined }],
     };
     const m = mount(<ReleasesPanel data={data} />);
     const pr = entry(m, '0.2.0').querySelector<HTMLAnchorElement>('a.uk-releases-pr');
@@ -193,6 +193,136 @@ describe('ReleasesPanel', () => {
     assert.equal(document.querySelectorAll('script').length, 0);
     assert.equal(m.all('img').length, 0);
     assert.match(entry(m, '0.4.0').textContent ?? '', /<script>alert\("xss"\)<\/script>/);
+  });
+});
+
+describe('ReleasesPanel with a rolled-up release', () => {
+  const rolled = rollup.releases[0];
+  const items = rolled.items as ReleaseItem[];
+  const withItems = (list: ReleaseItem[] | undefined, over: Partial<Release> = {}): ReleasesResponse => ({
+    current: null,
+    releases: [{ ...rolled, ...over, items: list }],
+  });
+  const text = (el: Element | null | undefined) => el?.textContent ?? '';
+
+  it('keeps the header row, drops the release-level title and notes, and groups the items by scope in item order', () => {
+    const m = mount(<ReleasesPanel data={rollup} />);
+    const e = entry(m, '0.5.0');
+    assert.equal(text(e.querySelector('.uk-releases-ver')), 'v0.5.0');
+    assert.deepEqual([...e.querySelectorAll('.uk-releases-badge')].map((b) => b.textContent), ['Feature', 'Breaking']);
+    assert.equal(text(e.querySelector('.uk-releases-date')), formatReleaseDate(rolled.date));
+    assert.equal(e.querySelectorAll(':scope > .uk-releases-title, :scope > .uk-releases-notes, :scope > .uk-releases-pr').length, 0);
+    const groups = [...e.querySelectorAll('.uk-releases-group')];
+    assert.deepEqual(groups.map((g) => text(g.querySelector('.uk-releases-scope'))), ['Kaizen', 'Routines']);
+    assert.deepEqual(groups.map((g) => g.querySelectorAll('.uk-releases-item').length), [2, 1]);
+  });
+
+  it('shows an item as its rendered notes, or its title when it has none, each followed by its own PR link', () => {
+    const m = mount(<ReleasesPanel data={rollup} />);
+    const [notes, titleOnly, fix] = m.all('.uk-releases-item');
+    assert.equal(notes.querySelector('.uk-releases-notes')?.innerHTML, renderNotesHtml(items[0].notes));
+    assert.equal(notes.querySelectorAll('.uk-releases-title').length, 0);
+    assert.equal(text(titleOnly.querySelector('.uk-releases-title')), 'Rename the log');
+    assert.equal(titleOnly.querySelectorAll('.uk-releases-notes').length, 0);
+    assert.ok(fix.querySelector('.uk-releases-notes'));
+    for (const [el, it] of [[notes, items[0]], [titleOnly, items[1]], [fix, items[2]]] as const) {
+      const links = el.querySelectorAll<HTMLAnchorElement>('a.uk-releases-pr');
+      assert.equal(links.length, 1);
+      assert.equal(links[0].textContent, `PR #${it.pr}`);
+      assert.equal(links[0].getAttribute('href'), it.url);
+      assert.equal(links[0].getAttribute('rel'), 'noopener noreferrer');
+      assert.equal(links[0].previousElementSibling?.matches('.uk-releases-notes, .uk-releases-title'), true, 'the link follows the item text');
+    }
+  });
+
+  it('renders an item title as it came — a per-PR prefix is not stripped here', () => {
+    const list = items.map((i, n) => (n === 1 ? { ...i, title: 'feat(kaizen): Rename the log' } : i));
+    const m = mount(<ReleasesPanel data={withItems(list)} />);
+    assert.equal(text(m.all('.uk-releases-item')[1].querySelector('.uk-releases-title')), 'feat(kaizen): Rename the log');
+  });
+
+  it('groups a one-item rollup too — it has no release-level PR, so the item carries the only link', () => {
+    assert.equal(rolled.pr, undefined, 'the rollup fixture has no release-level pr');
+    const m = mount(<ReleasesPanel data={withItems([items[0]])} />);
+    assert.equal(m.all('.uk-releases-group').length, 1);
+    assert.equal(m.all('.uk-releases-entry > .uk-releases-notes').length, 0, 'release-level notes (the ### Scope body) are not shown');
+    assert.equal(m.all('.uk-releases-item .uk-releases-pr').length, 1);
+    assert.match(text(m.all('.uk-releases-item .uk-releases-pr')[0]), new RegExp(`PR #${items[0].pr}`));
+  });
+
+  it('puts unscoped items in a last group called Other, and orders groups by first appearance', () => {
+    const [a, b, c] = items;
+    const list: ReleaseItem[] = [{ ...c, scope: undefined }, { ...a, scope: 'zeta' }, { ...b, scope: undefined }, { ...c, pr: 321, scope: 'alpha' }];
+    const m = mount(<ReleasesPanel data={withItems(list)} />);
+    assert.deepEqual(m.all('.uk-releases-scope').map((s) => s.textContent), ['Zeta', 'Alpha', 'Other']);
+    assert.deepEqual(m.all('.uk-releases-group').map((g) => g.querySelectorAll('.uk-releases-item').length), [1, 1, 2]);
+  });
+
+  it('puts Other last even when the unscoped item comes first', () => {
+    const [a, b, c] = items;
+    const m = mount(<ReleasesPanel data={withItems([{ ...a, scope: undefined }, b, c])} />);
+    assert.deepEqual(m.all('.uk-releases-scope').map((s) => s.textContent), ['Kaizen', 'Routines', 'Other']);
+  });
+
+  it('shows an item with no url as text with no link', () => {
+    const list = items.map((i, n) => (n === 0 ? { ...i, url: undefined } : i));
+    const m = mount(<ReleasesPanel data={withItems(list)} />);
+    const first = m.all('.uk-releases-item')[0];
+    assert.equal(first.querySelectorAll('a.uk-releases-pr').length, 0);
+    assert.equal(m.all('a.uk-releases-pr').length, 2);
+  });
+
+  it('runs item notes through the host sanitize, and keeps hostile item notes inert', () => {
+    const hostile = [{ ...items[0], notes: '<script>alert(1)</script>\n[x](javascript:alert(1))' }, items[1]];
+    const m = mount(<ReleasesPanel data={withItems(hostile)} />);
+    assert.equal(document.querySelectorAll('script').length, 0);
+    assert.equal(m.all('a[href^="javascript"]').length, 0);
+    assert.match(text(m.all('.uk-releases-item')[0]), /<script>alert\(1\)<\/script>/);
+    const seen: string[] = [];
+    const m2 = mount(<ReleasesPanel data={rollup} sanitize={(h) => (seen.push(h), '<i class="mine"></i>')} />);
+    assert.equal(m2.all('.uk-releases-item .uk-releases-notes .mine').length, 2, 'both items with notes, not the title-only one');
+    assert.deepEqual(seen, [renderNotesHtml(items[0].notes), renderNotesHtml(items[2].notes)]);
+  });
+
+  // The pre-change markup for 0.2.0 and 0.2.1, captured from the panel before grouped rendering existed.
+  const date = (iso: string) => formatReleaseDate(iso);
+  const today020 =
+    '<div class="uk-releases-entry" data-testid="release-0.2.0"><div class="uk-releases-row"><span class="uk-releases-ver">v0.2.0</span>' +
+    '<span class="uk-releases-badge uk-releases-badge-feat">Feature</span>' +
+    `<span class="uk-releases-date">${date('2026-09-20T12:00:00Z')}</span></div>` +
+    "<div class=\"uk-releases-title\">Add the What's new drawer</div>" +
+    '<div class="uk-releases-notes"><p>A version chip in the header opens a drawer listing every release, newest first.</p></div>' +
+    '<a class="uk-releases-pr" href="https://github.com/futin/release-kit/releases/tag/v0.2.0" target="_blank" rel="noopener noreferrer">PR #42</a></div>';
+  const today021 =
+    '<div class="uk-releases-entry" data-testid="release-0.2.1"><div class="uk-releases-row"><span class="uk-releases-ver">v0.2.1</span>' +
+    '<span class="uk-releases-badge uk-releases-badge-fix">Fix</span><span class="uk-releases-badge uk-releases-badge-breaking">Breaking</span>' +
+    `<span class="uk-releases-date">${date('2026-10-08T14:00:00Z')}</span></div>` +
+    '<div class="uk-releases-title">Drop the legacy settings key</div>' +
+    '<div class="uk-releases-notes"><p>Settings saved under the old <code>prefs</code> key are no longer read. ' +
+    'Re-save your settings once after upgrading.</p></div></div>';
+
+  it('a release with one item renders exactly today\'s markup — the item list is not used', () => {
+    const m = mount(<ReleasesPanel data={mixed} />);
+    assert.ok(mixed.releases[2].items?.length === 1, 'the fixture 0.2.0 carries one item');
+    assert.equal(entry(m, '0.2.0').outerHTML, today020);
+    assert.equal(m.all('.uk-releases-group').length, 0);
+  });
+
+  it('a release with no items (an older server) renders exactly today\'s markup', () => {
+    const m = mount(<ReleasesPanel data={mixed} />);
+    assert.equal(mixed.releases[1].items, undefined);
+    assert.equal(entry(m, '0.2.1').outerHTML, today021);
+  });
+
+  it('a release with an empty items array renders today\'s markup too', () => {
+    const data: ReleasesResponse = { current: null, releases: [{ ...mixed.releases[1], items: [] }] };
+    assert.equal(entry(mount(<ReleasesPanel data={data} />), '0.2.1').outerHTML, today021);
+  });
+
+  it('leaves the baseline alone', () => {
+    const m = mount(<ReleasesPanel data={{ current: null, releases: [{ ...baselineOnly.releases[0], items: [] }] }} />);
+    assert.equal(m.all('.uk-releases-group').length, 0);
+    assert.match(entry(m, '0.1.0').textContent ?? '', /Versioning starts here · v0\.1\.0/);
   });
 });
 

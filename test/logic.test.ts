@@ -12,7 +12,7 @@ import {
   TYPE_LABEL,
   writeLastSeen,
 } from '../src/index.js';
-import { empty, mixed } from '../fixtures/releases.js';
+import { empty, mixed, rollup } from '../fixtures/releases.js';
 
 describe('isVersion', () => {
   it('accepts a bare X.Y.Z and nothing else', () => {
@@ -105,6 +105,20 @@ describe('isReleasesResponse', () => {
   it('accepts the empty shape and a full one', () => {
     assert.equal(isReleasesResponse(empty), true);
     assert.equal(isReleasesResponse(mixed), true);
+  });
+  it('accepts a response with items and one without (an older server omits them)', () => {
+    assert.equal(isReleasesResponse(rollup), true);
+    assert.ok(rollup.releases.some((r) => r.items !== undefined), 'the rollup fixture carries items');
+    assert.ok(mixed.releases.some((r) => r.items === undefined), 'mixed still has a release with no items');
+    assert.equal(isReleasesResponse(mixed), true);
+  });
+  it('rejects items that is not an array, or holds an item without a numeric pr', () => {
+    const r = rollup.releases[0];
+    const withItems = (items: unknown) => ({ ...rollup, releases: [{ ...r, items }] });
+    for (const items of ['x', {}, 3, null, [null], ['x'], [{}], [{ pr: '336' }], [{ ...r.items?.[0], pr: undefined }]]) {
+      assert.equal(isReleasesResponse(withItems(items)), false, JSON.stringify(items));
+    }
+    assert.equal(isReleasesResponse(withItems([])), true);
   });
   it('rejects an HTML body, non-array releases and a current missing ahead', () => {
     for (const v of ['<html>', { releases: {} }, { current: { version: '1.0.0' }, releases: [] }, null, { releases: [] }]) {

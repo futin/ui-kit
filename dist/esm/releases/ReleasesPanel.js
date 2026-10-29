@@ -1,13 +1,35 @@
 import { Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { chipLabel, displayTitle, formatReleaseDate, TYPE_LABEL } from './logic.js';
 import { renderNotesHtml } from './notes.js';
+const notesHtml = (notes, sanitize) => (sanitize ? sanitize(renderNotesHtml(notes)) : renderNotesHtml(notes));
+const OTHER = 'Other';
+/**
+ * A rolled-up release's items by scope, groups in the order their scope first appears and unscoped items last under `Other`. A scope is shown capitalised;
+ * release-kit keeps it lowercase on the wire.
+ */
+function groupByScope(items) {
+    const groups = new Map();
+    for (const i of items) {
+        const key = i.scope ? i.scope.charAt(0).toUpperCase() + i.scope.slice(1) : OTHER;
+        groups.set(key, [...(groups.get(key) ?? []), i]);
+    }
+    const other = groups.get(OTHER);
+    groups.delete(OTHER);
+    return [...groups, ...(other ? [[OTHER, other]] : [])].map(([label, list]) => ({ label, items: list }));
+}
+function Item({ i, sanitize }) {
+    return (_jsxs("div", { className: "uk-releases-item", children: [i.notes !== '' ? (_jsx("div", { className: "uk-releases-notes", dangerouslySetInnerHTML: { __html: notesHtml(i.notes, sanitize) } })) : (_jsx("div", { className: "uk-releases-title", children: i.title })), i.url && (_jsxs("a", { className: "uk-releases-pr", href: i.url, target: "_blank", rel: "noopener noreferrer", children: ["PR #", i.pr] }))] }));
+}
 function Entry({ r, sanitize }) {
     // The baseline is where numbering starts, not something that shipped: a divider with its words in the gap, no badge, no title — but its date, as every
     // entry has, so the list says when versioning began.
     if (r.type === 'baseline') {
         return (_jsx("div", { className: "uk-releases-entry", "data-testid": `release-${r.version}`, children: _jsxs("div", { className: "uk-releases-base", children: [_jsxs("span", { children: ["Versioning starts here \u00B7 v", r.version] }), _jsx("span", { className: "uk-releases-date", children: formatReleaseDate(r.date) })] }) }));
     }
-    return (_jsxs("div", { className: "uk-releases-entry", "data-testid": `release-${r.version}`, children: [_jsxs("div", { className: "uk-releases-row", children: [_jsxs("span", { className: "uk-releases-ver", children: ["v", r.version] }), _jsx("span", { className: `uk-releases-badge uk-releases-badge-${r.type}`, children: TYPE_LABEL[r.type] }), r.breaking && _jsx("span", { className: "uk-releases-badge uk-releases-badge-breaking", children: "Breaking" }), _jsx("span", { className: "uk-releases-date", children: formatReleaseDate(r.date) })] }), _jsx("div", { className: "uk-releases-title", children: displayTitle(r.title) }), r.notes !== '' && (_jsx("div", { className: "uk-releases-notes", dangerouslySetInnerHTML: { __html: sanitize ? sanitize(renderNotesHtml(r.notes)) : renderNotesHtml(r.notes) } })), r.url && r.pr !== undefined && (_jsxs("a", { className: "uk-releases-pr", href: r.url, target: "_blank", rel: "noopener noreferrer", children: ["PR #", r.pr] }))] }));
+    // A rollup tag never carries a release-level PR, so a night with one PR is still grouped: its notes hold the `### Scope` body and its only link is the
+    // item's. A per-PR release (one item, with `pr`), an empty list or an older server's missing list is the per-PR entry below, unchanged.
+    const rolledUp = r.items !== undefined && r.items.length > 0 && (r.items.length > 1 || r.pr === undefined) ? r.items : null;
+    return (_jsxs("div", { className: "uk-releases-entry", "data-testid": `release-${r.version}`, children: [_jsxs("div", { className: "uk-releases-row", children: [_jsxs("span", { className: "uk-releases-ver", children: ["v", r.version] }), _jsx("span", { className: `uk-releases-badge uk-releases-badge-${r.type}`, children: TYPE_LABEL[r.type] }), r.breaking && _jsx("span", { className: "uk-releases-badge uk-releases-badge-breaking", children: "Breaking" }), _jsx("span", { className: "uk-releases-date", children: formatReleaseDate(r.date) })] }), rolledUp ? (groupByScope(rolledUp).map((g) => (_jsxs("div", { className: "uk-releases-group", children: [_jsx("div", { className: "uk-releases-scope", children: g.label }), g.items.map((i) => (_jsx(Item, { i: i, sanitize: sanitize }, i.pr)))] }, g.label)))) : (_jsxs(_Fragment, { children: [_jsx("div", { className: "uk-releases-title", children: displayTitle(r.title) }), r.notes !== '' && _jsx("div", { className: "uk-releases-notes", dangerouslySetInnerHTML: { __html: notesHtml(r.notes, sanitize) } })] })), !rolledUp && r.url && r.pr !== undefined && (_jsxs("a", { className: "uk-releases-pr", href: r.url, target: "_blank", rel: "noopener noreferrer", children: ["PR #", r.pr] }))] }));
 }
 export function ReleasesPanel({ data, sanitize }) {
     return (_jsxs(_Fragment, { children: [_jsxs("div", { className: "uk-releases-head", children: [_jsx("h2", { className: "uk-releases-heading", children: "What's new" }), data.current && _jsxs("span", { className: "uk-releases-running", children: ["running ", chipLabel(data.current)] })] }), _jsx("div", { className: "uk-releases-list", children: data.releases.map((r) => (_jsx(Entry, { r: r, sanitize: sanitize }, r.version))) })] }));

@@ -97,6 +97,17 @@ it('the narrow chip carries a transparent 44px hit area that does not grow the p
   assert.ok(!/min-height/.test(body('.uk-chip--narrow')), 'the pill itself stays 28px');
 });
 
+// The grouped entry's rules sit beside their neighbours and follow them: a colour is a --uk-* token with a fallback, never a bare literal.
+it('the grouped-release rules map --uk-* tokens with fallbacks and carry no literal colour', () => {
+  const selectors = ['.uk-releases-group', '.uk-releases-scope', '.uk-releases-item'];
+  for (const sel of selectors) assert.ok(body(sel).length > 0, `${sel} is missing`);
+  assert.match(decl('.uk-releases-scope', 'color')[0] ?? '', /^var\(--uk-ink-muted, #[0-9a-f]{3,6}\)$/);
+  for (const sel of selectors) {
+    const outsideTokens = body(sel).replace(/var\([^)]*\)/g, '');
+    assert.doesNotMatch(outsideTokens, /#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(/i, `${sel} has a colour that is not a --uk-* token`);
+  }
+});
+
 it('playground/themes.css is a host too: it maps tokens and restyles nothing', () => {
   assert.deepEqual(checkHostCss(readFileSync(join(root, 'playground/themes.css'), 'utf8')), []);
 });
