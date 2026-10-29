@@ -116,7 +116,7 @@ describe('ReleasesPanel', () => {
     const r = mixed.releases[2];
     const data: ReleasesResponse = {
       current: null,
-      releases: [r, { ...r, version: '0.1.9', url: undefined }, { ...r, version: '0.1.8', pr: undefined }],
+      releases: [r, { ...r, version: '0.1.9', url: undefined }, { ...r, version: '0.1.8', pr: undefined, items: undefined }],
     };
     const m = mount(<ReleasesPanel data={data} />);
     const pr = entry(m, '0.2.0').querySelector<HTMLAnchorElement>('a.uk-releases-pr');
@@ -239,6 +239,15 @@ describe('ReleasesPanel with a rolled-up release', () => {
     const list = items.map((i, n) => (n === 1 ? { ...i, title: 'feat(kaizen): Rename the log' } : i));
     const m = mount(<ReleasesPanel data={withItems(list)} />);
     assert.equal(text(m.all('.uk-releases-item')[1].querySelector('.uk-releases-title')), 'feat(kaizen): Rename the log');
+  });
+
+  it('groups a one-item rollup too — it has no release-level PR, so the item carries the only link', () => {
+    assert.equal(rolled.pr, undefined, 'the rollup fixture has no release-level pr');
+    const m = mount(<ReleasesPanel data={withItems([items[0]])} />);
+    assert.equal(m.all('.uk-releases-group').length, 1);
+    assert.equal(m.all('.uk-releases-entry > .uk-releases-notes').length, 0, 'release-level notes (the ### Scope body) are not shown');
+    assert.equal(m.all('.uk-releases-item .uk-releases-pr').length, 1);
+    assert.match(text(m.all('.uk-releases-item .uk-releases-pr')[0]), new RegExp(`PR #${items[0].pr}`));
   });
 
   it('puts unscoped items in a last group called Other, and orders groups by first appearance', () => {

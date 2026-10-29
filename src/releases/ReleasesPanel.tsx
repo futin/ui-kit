@@ -62,8 +62,9 @@ function Entry({ r, sanitize }: { r: Release; sanitize?: (html: string) => strin
       </div>
     );
   }
-  // Only a release that rolled up several PRs is grouped; one item, none, or an older server's missing list is the per-PR entry below, unchanged.
-  const rolledUp = r.items !== undefined && r.items.length > 1 ? r.items : null;
+  // A rollup tag never carries a release-level PR, so a night with one PR is still grouped: its notes hold the `### Scope` body and its only link is the
+  // item's. A per-PR release (one item, with `pr`), an empty list or an older server's missing list is the per-PR entry below, unchanged.
+  const rolledUp = r.items !== undefined && r.items.length > 0 && (r.items.length > 1 || r.pr === undefined) ? r.items : null;
   return (
     <div className="uk-releases-entry" data-testid={`release-${r.version}`}>
       <div className="uk-releases-row">

@@ -26,8 +26,9 @@ function Entry({ r, sanitize }) {
     if (r.type === 'baseline') {
         return (_jsx("div", { className: "uk-releases-entry", "data-testid": `release-${r.version}`, children: _jsxs("div", { className: "uk-releases-base", children: [_jsxs("span", { children: ["Versioning starts here \u00B7 v", r.version] }), _jsx("span", { className: "uk-releases-date", children: formatReleaseDate(r.date) })] }) }));
     }
-    // Only a release that rolled up several PRs is grouped; one item, none, or an older server's missing list is the per-PR entry below, unchanged.
-    const rolledUp = r.items !== undefined && r.items.length > 1 ? r.items : null;
+    // A rollup tag never carries a release-level PR, so a night with one PR is still grouped: its notes hold the `### Scope` body and its only link is the
+    // item's. A per-PR release (one item, with `pr`), an empty list or an older server's missing list is the per-PR entry below, unchanged.
+    const rolledUp = r.items !== undefined && r.items.length > 0 && (r.items.length > 1 || r.pr === undefined) ? r.items : null;
     return (_jsxs("div", { className: "uk-releases-entry", "data-testid": `release-${r.version}`, children: [_jsxs("div", { className: "uk-releases-row", children: [_jsxs("span", { className: "uk-releases-ver", children: ["v", r.version] }), _jsx("span", { className: `uk-releases-badge uk-releases-badge-${r.type}`, children: TYPE_LABEL[r.type] }), r.breaking && _jsx("span", { className: "uk-releases-badge uk-releases-badge-breaking", children: "Breaking" }), _jsx("span", { className: "uk-releases-date", children: formatReleaseDate(r.date) })] }), rolledUp ? (groupByScope(rolledUp).map((g) => (_jsxs("div", { className: "uk-releases-group", children: [_jsx("div", { className: "uk-releases-scope", children: g.label }), g.items.map((i) => (_jsx(Item, { i: i, sanitize: sanitize }, i.pr)))] }, g.label)))) : (_jsxs(_Fragment, { children: [_jsx("div", { className: "uk-releases-title", children: displayTitle(r.title) }), r.notes !== '' && _jsx("div", { className: "uk-releases-notes", dangerouslySetInnerHTML: { __html: notesHtml(r.notes, sanitize) } })] })), !rolledUp && r.url && r.pr !== undefined && (_jsxs("a", { className: "uk-releases-pr", href: r.url, target: "_blank", rel: "noopener noreferrer", children: ["PR #", r.pr] }))] }));
 }
 export function ReleasesPanel({ data, sanitize }) {
