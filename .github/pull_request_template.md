@@ -13,8 +13,9 @@ House rules for the body:
 
 ## What's new
 
-<!-- 1–3 lines in user terms: what an app using ui-kit can now do. These lines become the release notes. Delete this section for PRs with nothing
-     user-visible. -->
+<!-- Required on feat / fix / perf, and `ci / pr-title` fails while it is empty: these lines become the release notes. 1–3 lines in user terms: what an
+     app using ui-kit can now do. Nothing user-visible on a feat / fix / perf? Write `None` (or `None — <reason>`) on its own line; it is never shown.
+     Other types may delete this section. -->
 
 ## Why this shape
 

@@ -1,7 +1,9 @@
+# Each night, cuts one rollup tag for every feat|fix|perf PR merged to main since the last tag, then opens the consumers' bump PRs (README §Releases).
 name: release
 on:
-  push:
-    branches: [main]
+  # 03:00 UTC, an hour before the apps' own nightly releases. A dispatch releases on demand; the concurrency group below keeps the two from overlapping.
+  schedule:
+    - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       sha:
@@ -20,6 +22,7 @@ jobs:
     with:
       sha: ${{ inputs.sha }}
       kit-ref: v1
+      mode: rollup
   # Opens a `chore(deps): bump ui-kit to vX.Y.Z` PR in every consumer that is behind (release-kit README §Bump PRs). Idempotent, so it runs after every
   # release run, including one that released nothing. BUMP_TOKEN is a fine-grained PAT scoped to the consumers; a PR opened with GITHUB_TOKEN starts no CI.
   bump:
