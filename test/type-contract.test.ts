@@ -9,6 +9,7 @@ import type { VersionChipProps } from '../src/releases/VersionChip.js';
 
 // ui-kit owns its wire types and takes release-kit only as a devDependency (spec D19), so the two can drift apart silently. These declarations are the
 // contract: tsc refuses this file the moment release-kit's ReleasesResponse stops fitting ui-kit's, or a fixture stops fitting either.
+// From release-kit v1.4.0 its `Release.items` (required there) must fit ui-kit's optional `items`, so this same line covers ReleaseItem too; the bump is a held step.
 // Functions, not top-level values: the contract is checked by tsc and must cost nothing when tsx runs this file.
 export const accepts = (fromReleaseKit: ReleaseKitResponse): ReleasesResponse => fromReleaseKit;
 export const fixturesFit = (): Record<keyof typeof fixtures, ReleasesResponse> => fixtures;

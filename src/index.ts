@@ -1,5 +1,5 @@
 // ui-kit public surface.
-export type { Release, ReleasesResponse, ReleaseType } from './types.js';
+export type { Release, ReleaseItem, ReleasesResponse, ReleaseType } from './types.js';
 export {
   chipLabel,
   compareVersions,

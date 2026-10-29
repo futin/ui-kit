@@ -4,6 +4,19 @@
 /** `baseline` is the first tag, which carries no conventional-commit type. */
 export type ReleaseType = 'feat' | 'fix' | 'perf' | 'baseline';
 
+/** One PR's change inside a release. `title` is set on a per-PR release's item (the full PR title) and on a rollup's title-only item (its prefix stripped). */
+export type ReleaseItem = {
+  pr: number;
+  type: Exclude<ReleaseType, 'baseline'>;
+  scope?: string;
+  breaking: boolean;
+  title?: string;
+  /** Markdown release note; untrusted text to be rendered safely. Empty when the item is title-only. */
+  notes: string;
+  /** The PR's page, when release-kit could derive one. */
+  url?: string;
+};
+
 export type Release = {
   version: string;
   /** ISO 8601 date of the tag. */
@@ -17,6 +30,8 @@ export type Release = {
   /** Markdown release note; untrusted text to be rendered safely. */
   notes: string;
   url?: string;
+  /** Empty for a baseline, one for a per-PR release, one per PR for a rollup. Absent from an older server. */
+  items?: ReleaseItem[];
 };
 
 export type ReleasesResponse = {
